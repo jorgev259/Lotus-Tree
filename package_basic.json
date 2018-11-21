@@ -1,0 +1,24 @@
+{
+    "name": "lotustree",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "scripts": {
+        "test": "node main.js http://localhost:8080/callback",
+        "start": "node main.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^0.18.0",
+        "better-sqlite3": "^5.0.1",
+        "bufferutil": "^3.0.4",
+        "discord.js": "github:hydrabolt/discord.js",
+        "express": "^4.16.3",
+        "fs-extra": "^7.0.1",
+        "glob": "^7.1.2",
+        "octokat": "^0.10.0",
+        "uws": "^8.14.0",
+        "execa":"^1.0.0"
+    }
+}
