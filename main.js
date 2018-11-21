@@ -165,8 +165,10 @@
             console.log('Updating package.json')
             fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
 
-            console.log('Creating backup folder')
-            fs.moveSync('modules', 'modules_old')
+            if (fs.existsSync('modules')) {
+              console.log('Creating backup folder')
+              fs.moveSync('modules', 'modules_old')
+            }
             console.log('Moving updated modules')
             fs.moveSync('modules_new', 'modules')
             resolve()
