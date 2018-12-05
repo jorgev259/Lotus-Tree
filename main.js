@@ -145,40 +145,7 @@
           let files = data.tree.filter(file => file.type !== 'tree')
 
           let blobs = await Promise.all(files.map(file => repo.git.blobs(file.sha).read()))
-          let promises = []
-          for (let i = 0; i < blobs.length; i++) {
-            let file = files[i]
-            let binary = blobs[i]
-            if (file.path.endsWith('package.json')) {
-              let deps = JSON.parse(binary)
-              Object.keys(deps.dependencies).forEach(key => {
-                if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
-              })
-            } else if (file.path.endsWith('.json')) {
-              promises.push(fs.outputFile(file.path.replace('modules/', 'data/'), binary))
-            } else {
-              promises.push(fs.outputFile(file.path.replace('modules/', 'modules_new/'), binary))
-            }
-          }
-
-          Promise.all(promises).then(() => {
-            console.log('Updating package.json')
-            fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
-
-            if (fs.existsSync('modules')) {
-              console.log('Creating backup folder')
-              fs.moveSync('modules', 'modules_old')
-            }
-            console.log('Moving updated modules')
-            fs.moveSync('modules_new', 'modules')
-            resolve()
-          }).catch(err => {
-            console.log(err)
-            console.log('Modules update failed. Using backup folder')
-            fs.removeSync('modules_new')
-            fs.moveSync('modules_old', 'modules')
-            reject(err)
-          })
+          resolveFiles(files, blobs, packageJSON).then(jsonOut => { packageJSON = jsonOut; resolve() }).catch(err => reject(err))
         }
       })
     })
@@ -192,24 +159,39 @@
 
     let promises = modules.map(module => {
       return new Promise((resolve, reject) => {
-        octo.repos(module.owner, module.repo).fetch().then(repo => {
-          console.log(`Updating ${module.owner}/${module.repo}`)
-          resolveRepo(repo).then(() => {
-            console.log('Update successfull')
-          }).catch(() => {
-            console.log('Update failed')
-          }).finally(() => {
-            console.log('\n')
-            resolve()
-          })
-        })
+        switch (module.type) {
+          case 'github':
+            octo.repos(module.owner, module.repo).fetch().then(repo => {
+              console.log(`Updating ${module.owner}/${module.repo}`)
+              resolveRepo(repo).then(() => {
+                console.log('Update successfull')
+              }).catch(() => {
+                console.log('Update failed')
+              }).finally(() => {
+                console.log('\n')
+                resolve()
+              })
+            })
+            break
+
+          case 'local':
+            let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { path: e.replace(module.path, '') } })
+            let blobs = files.map(e => fs.readFileSync(module.path + e.path))
+
+            fs.removeSync('modules_new')
+            let packageJSON = require('./package.json')
+
+            resolveFiles(files, blobs, packageJSON).then(() => resolve()).catch(err => reject(err))
+
+            break
+        }
       })
     })
 
     await Promise.all(promises)
     fs.copySync('modules_basic', 'modules')
 
-    await npmInstall()
+    await npmInstallLegacy()
     startBot()
   }
 
@@ -252,6 +234,46 @@
 
       ls.on('exit', function (code) {
         resolve()
+      })
+    })
+  }
+
+  function resolveFiles (files, blobs, packageJSON) {
+    return new Promise((resolve, reject) => {
+      let promises = []
+      for (let i = 0; i < blobs.length; i++) {
+        let file = files[i]
+        let binary = blobs[i]
+
+        if (file.path.endsWith('package.json')) {
+          let deps = JSON.parse(binary)
+          Object.keys(deps.dependencies).forEach(key => {
+            if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
+          })
+        } else if (file.path.endsWith('.json')) {
+          promises.push(fs.outputFile(file.path.replace('modules/', 'data/'), binary))
+        } else {
+          promises.push(fs.outputFile(file.path.replace('modules/', 'modules_new/'), binary))
+        }
+      }
+
+      Promise.all(promises).then(() => {
+        console.log('Updating package.json')
+        fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
+
+        if (fs.existsSync('modules')) {
+          console.log('Creating backup folder')
+          fs.moveSync('modules', 'modules_old')
+        }
+        console.log('Moving updated modules')
+        fs.moveSync('modules_new', 'modules')
+        resolve(packageJSON)
+      }).catch(err => {
+        console.log(err)
+        console.log('Modules update failed. Using backup folder')
+        fs.removeSync('modules_new')
+        fs.moveSync('modules_old', 'modules')
+        reject(err)
       })
     })
   }

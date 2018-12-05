@@ -3,5 +3,14 @@
         "owner":"owner",
         "repo":"repo Name",
         "type":"github"
+    },
+    {
+        "path":"path",
+        "type":"local"
+    },
+    {
+        "owner":"jorgev259",
+        "repo":"darkside_new",
+        "type":"github"
     }
 ]
