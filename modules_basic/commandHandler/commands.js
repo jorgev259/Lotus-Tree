@@ -40,7 +40,7 @@ module.exports = {
     },
 
     restart: {
-      desc: 'Displays all custom commands for this server',
+      desc: 'Restarts the bot',
       async execute (client, msg, param, db) {
         pm2.restart('main', function (err, response) {
           if (err) {
