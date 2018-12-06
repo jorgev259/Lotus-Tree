@@ -4,7 +4,7 @@ const Discord = require('discord.js')
 var fs = require('fs-extra')
 
 module.exports = {
-  async permCheck (message, commandName, client, db) {
+  permCheck (message, commandName, client, db) {
     let dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(commandName, message.guild.id)
     if (dbPerms.length === 0) return true
     let perms = { role: [], user: [], channel: [] }
