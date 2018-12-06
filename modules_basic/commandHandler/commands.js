@@ -3,6 +3,7 @@ function params (param) { // eslint-disable-line
 };
 
 const Discord = require('discord.js')
+const pm2 = require('pm2')
 var util = require('../../utilities.js')
 
 module.exports = {
@@ -35,6 +36,18 @@ module.exports = {
           })
           message.author.send({ embed })
         }
+      }
+    },
+
+    restart: {
+      desc: 'Displays all custom commands for this server',
+      async execute (client, msg, param, db) {
+        pm2.restart('main', function (err, response) {
+          if (err) {
+            console.log(err)
+            msg.channel.send('Something went wrong')
+          }
+        })
       }
     },
 
