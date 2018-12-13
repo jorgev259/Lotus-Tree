@@ -40,9 +40,11 @@ module.exports = {
             client.commands.has(name) &&
             (client.commands.get(name).usage || client.commands.get(name).desc)
           ) {
-            message.channel.send(
-              client.commands.get(param[1].toLowerCase()).desc
-            )
+            let command = client.commands.get(param[1].toLowerCase())
+
+            if (util.permCheck(message, param[1].toLowerCase(), client, db) && command.desc) {
+              message.channelsend(`${command.desc}${command.usage ? ` Usage: ${command.usage}` : ''}`)
+            }
           }
         } else {
           let fields = Array.from(client.commands.keys()).map(idName => {
