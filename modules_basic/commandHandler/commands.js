@@ -43,7 +43,7 @@ module.exports = {
             let command = client.commands.get(param[1].toLowerCase())
 
             if (util.permCheck(message, param[1].toLowerCase(), client, db) && command.desc) {
-              message.channelsend(`${command.desc}${command.usage ? ` Usage: ${command.usage}` : ''}`)
+              message.channel.send(`${command.desc}${command.usage ? ` Usage: ${command.usage}` : ''}`)
             }
           }
         } else {

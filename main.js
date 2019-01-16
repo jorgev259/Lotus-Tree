@@ -1,3 +1,5 @@
+const gitModule = require('git-promise');
+
 (async () => {
   let fs = require('fs')
   if (!fs.existsSync('./package.json')) {
@@ -9,10 +11,8 @@
     await npmInstallLegacy()
   }
 
-  const axios = require('axios')
   fs = require('fs-extra')
   const glob = require('glob')
-  const Octokat = require('octokat')
   const { Client, Collection } = require('discord.js')
   const execa = require('execa')
 
@@ -22,7 +22,6 @@
   let firstData = glob.sync(`data/*`)
 
   loadData(client, firstData)
-  const octo = new Octokat(client.data.github)
 
   const Sqlite = require('better-sqlite3')
   let db = new Sqlite('data/database.db')
@@ -132,25 +131,6 @@
     })
   }
 
-  function resolveRepo (repo) {
-    return new Promise((resolve, reject) => {
-      axios.get(`https://api.github.com/repos/${repo.owner.login}/${repo.name}/git/trees/master?recursive=1`).then(async res => {
-        let data = res.data
-        if (data.truncated) {
-          // fallback
-        } else {
-          fs.removeSync('modules_new')
-          let packageJSON = require('./package.json')
-
-          let files = data.tree.filter(file => file.type !== 'tree')
-
-          let blobs = await Promise.all(files.map(file => repo.git.blobs(file.sha).read()))
-          resolveFiles(files, blobs, packageJSON).then(jsonOut => { packageJSON = jsonOut; resolve() }).catch(err => reject(err))
-        }
-      })
-    })
-  }
-
   async function checkModules (url) {
     let modules = require('./data/modules.json')
     fs.removeSync('modules_old')
@@ -158,30 +138,69 @@
     fs.copySync('package_basic.json', 'package.json')
 
     let promises = modules.map(module => {
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
+        let packageJSON = require('./package.json')
         switch (module.type) {
-          case 'github':
-            octo.repos(module.owner, module.repo).fetch().then(repo => {
-              console.log(`Updating ${module.owner}/${module.repo}`)
-              resolveRepo(repo).then(() => {
-                console.log('Update successfull')
-              }).catch(() => {
-                console.log('Update failed')
-              }).finally(() => {
-                console.log('\n')
-                resolve()
-              })
-            })
-            break
-
           case 'local':
             let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { path: e.replace(module.path, '') } })
             let blobs = files.map(e => fs.readFileSync(module.path + e.path))
 
-            fs.removeSync('modules_new')
-            let packageJSON = require('./package.json')
+            fs.mkdirSync('./modules_new')
 
             resolveFiles(files, blobs, packageJSON).then(() => resolve()).catch(err => reject(err))
+
+            break
+
+          case 'git':
+            if (!fs.existsSync(`repos/${module.name}/.git`)) {
+              await git(`clone ${module.url} ${module.name}`)
+            } else {
+              await git('fetch', module.name)
+              let local = await git('git rev-parse master', module.name)
+              let remote = await git('git rev-parse remotes/origin/master', module.name)
+
+              if (local !== remote) {
+                console.log(`Updating repository ${module.name}`)
+                await git('git pull', module.name)
+                console.log(`Updated repository ${module.name}`)
+              } else {
+                console.log(`${module.name} is up to date.`)
+              }
+            }
+
+            let promises2 = []
+            let fileList = glob.sync(`repos/${module.name}/**`, { nodir: true })
+            fileList.forEach(file => {
+              if (file.endsWith('package.json')) {
+                let deps = require(`./${file}`)
+                Object.keys(deps.dependencies).forEach(key => {
+                  if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
+                })
+              } else if (file.endsWith('.json')) {
+                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'data/')))
+              } else {
+                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'modules_new/')))
+              }
+            })
+
+            Promise.all(promises2).then(() => {
+              console.log('Updating package.json')
+              fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
+
+              if (fs.existsSync('modules')) {
+                console.log('Creating backup folder')
+                fs.moveSync('modules', 'modules_old')
+              }
+              console.log('Moving updated modules')
+              fs.moveSync('modules_new', 'modules')
+              resolve(packageJSON)
+            }).catch(err => {
+              console.log(err)
+              console.log('Modules update failed. Using backup folder')
+              fs.removeSync('modules_new')
+              fs.moveSync('modules_old', 'modules')
+              reject(err)
+            })
 
             break
         }
@@ -273,6 +292,16 @@
         console.log('Modules update failed. Using backup folder')
         fs.removeSync('modules_new')
         fs.moveSync('modules_old', 'modules')
+        reject(err)
+      })
+    })
+  }
+
+  function git (command, repo = '') {
+    return new Promise((resolve, reject) => {
+      gitModule(command, { cwd: `repos/${repo}` }).then(res => {
+        resolve(res)
+      }).fail(err => {
         reject(err)
       })
     })
