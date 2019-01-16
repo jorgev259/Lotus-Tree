@@ -1,4 +1,3 @@
-const gitModule = require('git-promise');
 
 (async () => {
   let fs = require('fs')
@@ -13,6 +12,7 @@ const gitModule = require('git-promise');
 
   fs = require('fs-extra')
   const glob = require('glob')
+  const gitModule = require('git-promise')
   const { Client, Collection } = require('discord.js')
   const execa = require('execa')
 
