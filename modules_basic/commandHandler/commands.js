@@ -6,6 +6,7 @@ function params (param) {
 const Discord = require('discord.js')
 const pm2 = require('pm2')
 var util = require('../../utilities.js')
+const config = require('../../confi/config.json')
 
 module.exports = {
   async reqs (client, db) {
@@ -67,7 +68,7 @@ module.exports = {
     restart: {
       desc: 'Restarts the bot',
       async execute (client, msg, param, db) {
-        pm2.restart('main', function (err, response) {
+        pm2.restart(config.pm2 || 'main', function (err, response) {
           if (err) {
             console.log(err)
             msg.channel.send('Something went wrong')
