@@ -6,7 +6,7 @@ function params (param) {
 const Discord = require('discord.js')
 const pm2 = require('pm2')
 var util = require('../../utilities.js')
-const config = require('../../confi/config.json')
+const config = require('../../data/config.json')
 
 module.exports = {
   async reqs (client, db) {
