@@ -142,7 +142,7 @@
         let packageJSON = require('./package.json')
         switch (module.type) {
           case 'local':
-            let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { path: e.replace(module.path, '') } })
+            let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { path: e.replace(module.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
             let blobs = files.map(e => fs.readFileSync(module.path + e.path))
 
             fs.mkdirSync('./modules_new')
