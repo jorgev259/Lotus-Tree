@@ -204,6 +204,32 @@ module.exports = {
       }
     },
 
+    about: {
+      desc: 'Info about the bot',
+      async execute (client, message, param, db) {
+        message.channel.send({
+          'embed': {
+            'title': 'About',
+            'description': 'Powered by [Lotus Tree](https://github.com/jorgev259/Lotus-Tree) (Source code available).\nReport any issues on [this link](https://github.com/jorgev259/Lotus-Tree/issues).\n\n[Add me to your server!](https://discordapp.com/oauth2/authorize?client_id=477560851172294657&scope=bot&permissions=1)',
+            'color': 16150617,
+            'thumbnail': {
+              'url': 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/intermediary/f/e65e21bd-dc77-499e-962a-fa13cab37fc2/d7rwh84-d70dd9c5-1de9-4ebd-b3bb-78d9f517e230.jpg/v1/fill/w_894,h_894,q_70,strp/p3p_sketch_by_kuvshinov_ilya_d7rwh84-pre.jpg'
+            },
+            'fields': [
+              {
+                'name': 'Developed by',
+                'value': 'Jorge Vargas (George#3333) ([Github](https://github.com/jorgev259))'
+              },
+              {
+                'name': 'Throw me a bone! or something',
+                'value': '[Paypal](https://paypal.me/chitothelickeddorito) or [Ko-Fi](https://Ko-fi.com/E1E8I3VN)'
+              }
+            ]
+          }
+        })
+      }
+    },
+
     remove: {
       desc: 'Deletes an embed command. Usage: >remove <name>',
       async execute (client, message, param, db) {
