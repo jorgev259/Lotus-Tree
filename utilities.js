@@ -36,7 +36,7 @@ module.exports = {
   log: function (client, log) {
     console.log(log)
     if (client != null && client.channels.size > 0 && client.readyAt != null) {
-      client.channels.get('478591298241036328').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
+      client.channels.find(c => c.name === 'error-logs').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
     }
   }
 }
