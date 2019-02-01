@@ -104,33 +104,6 @@
 
   checkModules()
 
-  function resolveFolderRecursive (repo, path) {
-    return new Promise(async (resolve, reject) => {
-      let contents = await repo.contents(path).read()
-      let items = contents.items.map(item => {
-        if (item.type === 'dir') {
-          return resolveFolderRecursive(repo, item.path)
-        } else {
-          return item
-        }
-      })
-
-      let list = await Promise.all(items)
-      let out = []
-      list.forEach(item => {
-        if (Array.isArray(item)) {
-          item.forEach(item2 => {
-            out.push(item2)
-          })
-        } else {
-          out.push(item)
-        }
-      })
-
-      resolve(out)
-    })
-  }
-
   async function checkModules (url) {
     let modules = require('./data/modules.json')
     fs.removeSync('modules_old')

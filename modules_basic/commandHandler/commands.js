@@ -1,8 +1,3 @@
-function params (param) {
-  // eslint-disable-line
-  return param.slice(1, param.length).join(' ')
-}
-
 const Discord = require('discord.js')
 const pm2 = require('pm2')
 var util = require('../../utilities.js')
@@ -94,7 +89,7 @@ module.exports = {
         let command = db
           .prepare('SELECT command FROM customs WHERE guild=? AND name=?')
           .get(message.guild.id, param[0].toLowerCase())
-        message.channel.send(eval('`' + command.command + '`')) // eslint-disable-line
+        message.channel.send(command.command)
       }
     },
 
