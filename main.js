@@ -15,18 +15,114 @@
   const gitModule = require('git-promise')
   const { Client, Collection } = require('discord.js')
   const execa = require('execa')
-
   const client = new Client()
   client.commands = new Collection()
   client.data = {}
   let firstData = glob.sync(`data/*`)
 
-  loadData(client, firstData)
-
   const Sqlite = require('better-sqlite3')
   let db = new Sqlite('data/database.db')
 
   var util = require('./utilities.js')
+
+  loadData(client, firstData)
+  checkModules()
+
+  async function checkModules () {
+    let modules = require('./data/modules.json')
+    fs.removeSync('modules_old')
+    fs.removeSync('package.json')
+    fs.copySync('package_basic.json', 'package.json')
+    fs.removeSync('./modules_new')
+    fs.mkdirSync('./modules_new')
+
+    await Promise.all(modules.map(module => {
+      return new Promise(async (resolve, reject) => {
+        let packageJSON = require('./package.json')
+        switch (module.type) {
+          case 'local':
+            let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { original: e, path: e.replace(module.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
+            let promises = []
+
+            files.forEach(file => {
+              console.log(file)
+              if (file.path.endsWith('package.json')) {
+                let deps = JSON.parse(fs.readFileSync(module.path + file.path))
+                Object.keys(deps.dependencies).forEach(key => {
+                  if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
+                })
+              } else if (file.path.endsWith('.json')) {
+                promises.push(fs.copySync(file.original, file.path.replace('modules/', 'data/')))
+              } else {
+                promises.push(fs.copySync(file.original, file.path.replace('modules/', 'modules_new/')))
+              }
+            })
+
+            Promise.all(promises).then(() => {
+              console.log('Updating package.json')
+              fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
+
+              resolve(packageJSON)
+            }).catch(err => {
+              console.log(err)
+              resolve(err)
+            })
+
+            break
+
+          case 'git':
+            if (!await fs.pathExists(`./repos/${module.name}/.git`)) {
+              await git(`clone ${module.url} ${module.name}`)
+            } else {
+              await git('fetch', module.name)
+              let local = await git('git rev-parse master', module.name)
+              let remote = await git('git rev-parse remotes/origin/master', module.name)
+
+              if (local !== remote) {
+                console.log(`Updating repository ${module.name}`)
+                await git('git pull', module.name)
+                console.log(`Updated repository ${module.name}`)
+              } else {
+                console.log(`${module.name} is up to date.`)
+              }
+            }
+
+            let promises2 = []
+            let fileList = glob.sync(`repos/${module.name}/**`, { nodir: true })
+
+            fileList.forEach(file => {
+              if (file.endsWith('package.json')) {
+                let deps = require(`./${file}`)
+                Object.keys(deps.dependencies).forEach(key => {
+                  if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
+                })
+              } else if (file.endsWith('.json')) {
+                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'data/')))
+              } else {
+                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'modules_new/')))
+              }
+            })
+
+            Promise.all(promises2).then(() => {
+              console.log('Updating package.json')
+              fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
+              resolve(packageJSON)
+            }).catch(err => {
+              console.log(err)
+              resolve(err)
+            })
+
+            break
+        }
+      })
+    }))
+
+    fs.moveSync('modules_new', 'modules')
+    fs.copySync('modules_basic', 'modules')
+
+    await npmInstallLegacy()
+    startBot()
+  }
 
   async function startBot () {
     let dataFiles = glob.sync(`data/*`)
@@ -34,6 +130,7 @@
     let modules = glob.sync(`modules/*/`)
 
     client.data = {}
+    client.data.moduleNames = []
 
     let eventModules = {}
     let error = true
@@ -62,7 +159,7 @@
 
         commandKeys.forEach(commandName => {
           client.commands.set(commandName, outModule.commands[commandName])
-          client.commands.get(commandName).type = moduleName
+          if (moduleName !== 'commandHandler') client.commands.get(commandName).module = moduleName
 
           let command = outModule.commands[commandName]
           if (command.alias) {
@@ -74,8 +171,10 @@
 
         eventKeys.forEach(eventName => {
           if (!eventModules[eventName]) eventModules[eventName] = []
-          eventModules[eventName].push(outModule.events[eventName])
+          eventModules[eventName].push({ func: outModule.events[eventName], module: moduleName })
         })
+
+        if (moduleName !== 'commandHandler') client.data.moduleNames.push(moduleName)
 
         console.log(`Loaded module ${moduleName} with ${commandKeys.length} commands and ${eventKeys.length} events`)
         error = false
@@ -92,99 +191,14 @@
 
     Object.keys(eventModules).forEach(eventName => {
       client.on(eventName, (...args) => {
-        eventModules[eventName].forEach(func => {
-          func(client, db, ...args)
+        eventModules[eventName].forEach(item => {
+          item.func(client, db, item.module, ...args)
         })
       })
     })
 
     process.on('unhandledRejection', err => { if (err.message !== 'Unknown User') util.log(client, err.stack) })
     client.login(client.data.tokens.discord)
-  }
-
-  checkModules()
-
-  async function checkModules (url) {
-    let modules = require('./data/modules.json')
-    fs.removeSync('modules_old')
-    fs.removeSync('package.json')
-    fs.copySync('package_basic.json', 'package.json')
-
-    let promises = modules.map(module => {
-      return new Promise(async (resolve, reject) => {
-        let packageJSON = require('./package.json')
-        switch (module.type) {
-          case 'local':
-            let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { path: e.replace(module.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
-            let blobs = files.map(e => fs.readFileSync(module.path + e.path))
-
-            fs.mkdirSync('./modules_new')
-
-            resolveFiles(files, blobs, packageJSON).then(() => resolve()).catch(err => reject(err))
-
-            break
-
-          case 'git':
-            if (!fs.existsSync(`repos/${module.name}/.git`)) {
-              await git(`clone ${module.url} ${module.name}`)
-            } else {
-              await git('fetch', module.name)
-              let local = await git('git rev-parse master', module.name)
-              let remote = await git('git rev-parse remotes/origin/master', module.name)
-
-              if (local !== remote) {
-                console.log(`Updating repository ${module.name}`)
-                await git('git pull', module.name)
-                console.log(`Updated repository ${module.name}`)
-              } else {
-                console.log(`${module.name} is up to date.`)
-              }
-            }
-
-            let promises2 = []
-            let fileList = glob.sync(`repos/${module.name}/**`, { nodir: true })
-            fileList.forEach(file => {
-              if (file.endsWith('package.json')) {
-                let deps = require(`./${file}`)
-                Object.keys(deps.dependencies).forEach(key => {
-                  if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
-                })
-              } else if (file.endsWith('.json')) {
-                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'data/')))
-              } else {
-                promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'modules_new/')))
-              }
-            })
-
-            Promise.all(promises2).then(() => {
-              console.log('Updating package.json')
-              fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
-
-              if (fs.existsSync('modules')) {
-                console.log('Creating backup folder')
-                fs.moveSync('modules', 'modules_old')
-              }
-              console.log('Moving updated modules')
-              fs.moveSync('modules_new', 'modules')
-              resolve(packageJSON)
-            }).catch(err => {
-              console.log(err)
-              console.log('Modules update failed. Using backup folder')
-              fs.removeSync('modules_new')
-              fs.moveSync('modules_old', 'modules')
-              reject(err)
-            })
-
-            break
-        }
-      })
-    })
-
-    await Promise.all(promises)
-    fs.copySync('modules_basic', 'modules')
-
-    await npmInstallLegacy()
-    startBot()
   }
 
   function loadData (client, dataFiles) {
@@ -226,46 +240,6 @@
 
       ls.on('exit', function (code) {
         resolve()
-      })
-    })
-  }
-
-  function resolveFiles (files, blobs, packageJSON) {
-    return new Promise((resolve, reject) => {
-      let promises = []
-      for (let i = 0; i < blobs.length; i++) {
-        let file = files[i]
-        let binary = blobs[i]
-
-        if (file.path.endsWith('package.json')) {
-          let deps = JSON.parse(binary)
-          Object.keys(deps.dependencies).forEach(key => {
-            if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
-          })
-        } else if (file.path.endsWith('.json')) {
-          promises.push(fs.outputFile(file.path.replace('modules/', 'data/'), binary))
-        } else {
-          promises.push(fs.outputFile(file.path.replace('modules/', 'modules_new/'), binary))
-        }
-      }
-
-      Promise.all(promises).then(() => {
-        console.log('Updating package.json')
-        fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
-
-        if (fs.existsSync('modules')) {
-          console.log('Creating backup folder')
-          fs.moveSync('modules', 'modules_old')
-        }
-        console.log('Moving updated modules')
-        fs.moveSync('modules_new', 'modules')
-        resolve(packageJSON)
-      }).catch(err => {
-        console.log(err)
-        console.log('Modules update failed. Using backup folder')
-        fs.removeSync('modules_new')
-        fs.moveSync('modules_old', 'modules')
-        reject(err)
       })
     })
   }

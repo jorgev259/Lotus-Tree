@@ -2,7 +2,15 @@ var util = require('../../utilities.js')
 
 module.exports = {
   events: {
-    async message (client, db, message) {
+    ready (client, db, module) {
+      client.guilds.forEach(guild => {
+        checkGuild(client, db, guild)
+      })
+    },
+    guildCreate (client, db, guild) {
+      checkGuild(client, db, guild)
+    },
+    async message (client, db, moduleName, message) {
       if (!message.member) return
       var prefix = '>'
 
@@ -17,12 +25,30 @@ module.exports = {
 
         const commandName = param[0].toLowerCase()
         var command = db.prepare('SELECT * FROM customs WHERE guild=? AND name=?').get(message.guild.id, commandName)
-        if (await util.permCheck(message, commandName, client, db)) {
-          if (command === undefined) { command = {}; command.type = param[0].toLowerCase() };
-          if (!client.commands.has(command.type)) return
-          client.commands.get(command.type).execute(client, message, param, db)
+
+        let identifier
+        if (command === undefined) {
+          identifier = param[0].toLowerCase()
+        } else identifier = command.type
+
+        if (!client.commands.has(identifier)) return
+        if (command === undefined) command = client.commands.get(identifier)
+
+        if (await util.permCheck(message, command.module, commandName, client, db)) {
+          client.commands.get(identifier).execute(client, message, param, db, command.module)
         }
       }
     }
+  }
+}
+
+function checkGuild (client, db, guild) {
+  client.data.moduleNames.forEach(module => {
+    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,false)').run(guild.id, module)
+  })
+
+  for (let commandName of client.commands.keys()) {
+    let command = client.commands.get(commandName)
+    if (command.module) db.prepare('INSERT OR IGNORE INTO commands (guild,command,state,module) VALUES (?,?,true,?)').run(guild.id, commandName, command.module)
   }
 }

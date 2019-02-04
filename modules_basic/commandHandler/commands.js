@@ -12,7 +12,7 @@ module.exports = {
       'CREATE TABLE IF NOT EXISTS modules (guild TEXT, module TEXT, state TEXT, PRIMARY KEY(`guild`,`module`))'
     ).run()
     db.prepare(
-      'CREATE TABLE IF NOT EXISTS commands (guild TEXT, command TEXT, state TEXT, PRIMARY KEY(`guild`,`command`))'
+      'CREATE TABLE IF NOT EXISTS commands (guild TEXT, command TEXT, module TEXT, state TEXT, PRIMARY KEY(`guild`,`command`))'
     ).run()
     db.prepare(
       'CREATE TABLE IF NOT EXISTS customs (guild TEXT, name TEXT, type TEXT, command TEXT, PRIMARY KEY(`guild`,`name`))'
@@ -26,6 +26,34 @@ module.exports = {
   },
 
   commands: {
+    toggle: {
+      usage: 'Usage: toggle [module/command] [name]',
+      desc: 'Enables or disables a command/module.',
+      async execute (client, msg, param, db) {
+        if (!param[1] || !param[2]) return msg.channel.send('Usage: toggle [module/command] [name]')
+        let mode = param[1].toLowerCase()
+        if (!['module', 'command'].includes(mode)) return msg.channel.send(`${mode} is not a valid option`)
+
+        let id = param[2].toLowerCase()
+        switch (mode) {
+          case 'module':
+            if (!client.data.moduleNames.includes(id)) return msg.channel.send(`${id} is not a valid module name.\nModules: ${client.data.moduleNames.join(', ')}.`)
+            db.prepare('UPDATE modules SET state = NOT state WHERE module=? AND guild=?').run(id, msg.guild.id)
+            msg.channel.send(`The module '${id}' has been ${db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(id, msg.guild.id).state === '0' ? 'disabled' : 'enabled'}.`)
+            break
+
+          case 'command':
+            let commands = db.prepare('SELECT command FROM commands').all().map(e => e.command)
+            if (!commands.includes(id)) return msg.channel.send(`${id} is not a valid command name.\nCommands: ${commands.join(', ')}.`)
+
+            db.prepare('UPDATE commands SET state = NOT state WHERE command=? AND guild=?').run(id, msg.guild.id)
+
+            let data = db.prepare('SELECT c.state as cState, m.state as mState, m.module as module FROM commands c, modules m WHERE c.command=? AND c.guild=? AND c.module = m.module').get(id, msg.guild.id)
+            msg.channel.send(`The module '${id}' has been ${data.cState === '0' ? 'disabled' : 'enabled'}.${data.mState === '0' && data.cState === '1' ? `\nEnable the module '${data.module}' to use this command.` : ''}`)
+            break
+        }
+      }
+    },
     help: {
       usage: 'Usage: help command',
       desc: 'This command displays information about a command.',
@@ -46,7 +74,7 @@ module.exports = {
           let fields = Array.from(client.commands.keys()).map(idName => {
             let command = client.commands.get(idName)
 
-            if (util.permCheck(message, idName, client, db) && command.desc) {
+            if (util.permCheck(message, command.module, idName, client, db) && command.desc) {
               return {
                 name: idName,
                 value: `${command.desc}${command.usage ? ` ${command.usage}` : ''}`
@@ -73,6 +101,32 @@ module.exports = {
     },
 
     commands: {
+      desc: 'Displays all commands and modules available',
+      async execute (client, msg, param, db) {
+        let fields = db.prepare('SELECT module as name,state FROM modules WHERE guild=?').all(msg.guild.id).map(function (module) {
+          return {
+            'name': `${module.name}${module.state === '0' ? ' (disabled)' : ''}`,
+            'value': db.prepare('SELECT command as name,state FROM commands WHERE guild=? AND module=?').all(msg.guild.id, module.name).map(command => `${command.name}${command.state === '0' ? ' (disabled)' : ''}`).join('\n') || '\u200B'
+          }
+        })
+        let embed = {
+          'title': 'Available Commands (per module)',
+          'color': 4128386,
+          'fields': fields
+        }
+
+        let customs = db.prepare('SELECT name FROM customs WHERE guild=?').all(msg.guild.id)
+        if (customs.length > 0) {
+          embed.fields.push({
+            'name': 'Custom Commands',
+            'value': customs.map(e => e.name).join('\n')
+          })
+        }
+        msg.channel.send({ embed })
+      }
+    },
+
+    custom: {
       desc: 'Displays all custom commands for this server',
       async execute (client, message, param, db) {
         let commands = db
