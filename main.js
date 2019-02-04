@@ -45,7 +45,6 @@
             let promises = []
 
             files.forEach(file => {
-              console.log(file)
               if (file.path.endsWith('package.json')) {
                 let deps = JSON.parse(fs.readFileSync(module.path + file.path))
                 Object.keys(deps.dependencies).forEach(key => {
