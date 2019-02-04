@@ -70,20 +70,22 @@
             break
 
           case 'git':
-            if (!await fs.pathExists(`./repos/${module.name}/.git`)) {
+            if (!(await fs.pathExists(`./repos/${module.name}/.git`))) {
               await git(`clone ${module.url} ${module.name}`)
             } else {
-              await git('fetch', module.name)
+              /* await git('fetch', module.name)
               let local = await git('git rev-parse master', module.name)
+              console.log(local)
               let remote = await git('git rev-parse remotes/origin/master', module.name)
+              console.log(remote)
 
-              if (local !== remote) {
-                console.log(`Updating repository ${module.name}`)
-                await git('git pull', module.name)
-                console.log(`Updated repository ${module.name}`)
-              } else {
+              if (local !== remote) { */
+              console.log(`Updating repository ${module.name}`)
+              await git('git pull', module.name)
+              console.log(`Updated repository ${module.name}`)
+              /* } else {
                 console.log(`${module.name} is up to date.`)
-              }
+              } */
             }
 
             let promises2 = []
@@ -249,6 +251,7 @@
       gitModule(command, { cwd: `repos/${repo}` }).then(res => {
         resolve(res)
       }).fail(err => {
+        console.log(err)
         reject(err)
       })
     })
