@@ -43,6 +43,7 @@ module.exports = {
 }
 
 function checkGuild (client, db, guild) {
+  console.log(client.data.moduleNames)
   client.data.moduleNames.forEach(module => {
     db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,false)').run(guild.id, module)
   })
