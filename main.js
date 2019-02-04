@@ -117,7 +117,8 @@
       })
     }))
 
-    fs.moveSync('modules_new', 'modules')
+    fs.copySync('modules_new', 'modules')
+    fs.removeSync('modules_new')
     fs.copySync('modules_basic', 'modules')
 
     await npmInstallLegacy()
