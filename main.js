@@ -6,8 +6,9 @@
     fs.copyFileSync('package_basic.json', 'package.json')
   }
   if (!fs.existsSync('./node_modules')) {
-    console.log('node_modules not found. Running "npm install"')
-    await npmInstallLegacy()
+    console.log('node_modules not found. Use \'npm install to create it\'')
+    process.exit()
+    // await npmInstallLegacy()
   }
 
   fs = require('fs-extra')
@@ -122,7 +123,7 @@
     fs.removeSync('modules_new')
     fs.copySync('modules_basic', 'modules')
 
-    await npmInstallLegacy()
+    // await npmInstallLegacy()
     startBot()
   }
 
