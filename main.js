@@ -40,7 +40,7 @@ async function checkModules () {
     try {
       await gitModule('git pull')
     } catch (err) {
-      console.log(err)
+      console.log(err.stdout)
       console.log('LotusTree update failed. Use \'git pull\' for more detailed information')
       process.exit(0)
     }
