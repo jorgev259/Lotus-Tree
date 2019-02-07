@@ -12,7 +12,6 @@ if (!fs.existsSync('./node_modules')) {
 
 const gitModule = require('git-promise')
 
-
 fs = require('fs-extra')
 const glob = require('glob')
 
@@ -76,19 +75,16 @@ async function checkModules () {
           if (!(await fs.pathExists(`./repos/${module.name}/.git`))) {
             await git(`clone ${module.url} ${module.name}`)
           } else {
-            /* await git('fetch', module.name)
-              let local = await git('git rev-parse master', module.name)
-              console.log(local)
-              let remote = await git('git rev-parse remotes/origin/master', module.name)
-              console.log(remote)
+            let remote = (await git('ls-remote', module.name)).split('\n')[0].split('\t')[0]
+            let local = (await git('rev-parse HEAD', module.name)).split('\n')[0]
 
-              if (local !== remote) { */
-            console.log(`Updating repository ${module.name}`)
-            await git('git pull', module.name)
-            console.log(`Updated repository ${module.name}`)
-            /* } else {
-                console.log(`${module.name} is up to date.`)
-              } */
+            if (remote !== local) {
+              console.log(`Updating repository ${module.name}`)
+              await git('git pull', module.name)
+              console.log(`Updated repository ${module.name}`)
+            } else {
+              console.log(`${module.name} is up to date.`)
+            }
           }
 
           let promises2 = []
