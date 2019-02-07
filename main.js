@@ -75,7 +75,7 @@ async function checkModules () {
           if (!(await fs.pathExists(`./repos/${module.name}/.git`))) {
             await git(`clone ${module.url} ${module.name}`)
           } else {
-            let remote = (await git('ls-remote', module.name)).split('\n')[0].split('\t')[0]
+            let remote = (await git('ls-remote', module.name)).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
             let local = (await git('rev-parse HEAD', module.name)).split('\n')[0]
 
             if (remote !== local) {
