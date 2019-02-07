@@ -1,4 +1,4 @@
-
+//Powered by LotusTree
 let fs = require('fs')
 if (!fs.existsSync('./package.json')) {
   console.log('package.json not found. Adding default from package_basic.json')
