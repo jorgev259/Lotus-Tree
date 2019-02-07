@@ -1,8 +1,8 @@
-
 let fs = require('fs')
 if (!fs.existsSync('./package.json')) {
-  console.log('package.json not found. Adding default from package_basic.json')
+  console.log('package.json not found. Adding default from package_basic.json. Use \'npm install to install dependencies\'')
   fs.copyFileSync('package_basic.json', 'package.json')
+  process.exit(0)
 }
 if (!fs.existsSync('./node_modules')) {
   console.log('node_modules not found. Use \'npm install to create it\'')
@@ -31,6 +31,24 @@ loadData(client, firstData)
 checkModules()
 
 async function checkModules () {
+  let remoteLotus = (await gitModule('ls-remote')).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
+  let localLotus = (await gitModule('rev-parse HEAD')).split('\n')[0]
+
+  if (remoteLotus !== localLotus) {
+    console.log(`Updating LotusTree`)
+    try {
+      await gitModule('git pull')
+    } catch (err) {
+      console.log(err)
+      console.log('LotusTree update failed. Use \'git pull\' for more detailed information')
+      process.exit(0)
+    }
+    console.log(`Updated LotusTree. Restart the app.`)
+    process.exit(0)
+  }
+
+  console.log(`LotusTree is up to date.`)
+
   let modules = require('./data/modules.json')
   fs.removeSync('modules_old')
   fs.removeSync('package.json')
