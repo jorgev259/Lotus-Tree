@@ -18,7 +18,7 @@ const glob = require('glob')
 
 const { Client, Collection } = require('discord.js')
 const execa = require('execa')
-const client = new Client()
+const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
 client.commands = new Collection()
 client.data = {}
 let firstData = glob.sync(`data/*`)
