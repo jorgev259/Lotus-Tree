@@ -24,18 +24,12 @@ module.exports = {
         }
 
         const commandName = param[0].toLowerCase()
-        var command = db.prepare('SELECT * FROM customs WHERE guild=? AND name=?').get(message.guild.id, commandName)
 
-        let identifier
-        if (command === undefined) {
-          identifier = param[0].toLowerCase()
-        } else identifier = command.type
-
-        if (!client.commands.has(identifier)) return
-        if (command === undefined) command = client.commands.get(identifier)
+        if (!client.commands.has(commandName)) return
+        let command = client.commands.get(commandName)
 
         if (await util.permCheck(message, command.module, commandName, client, db)) {
-          client.commands.get(identifier).execute(client, message, param, db, command.module)
+          client.commands.get(commandName).execute(client, message, param, db, command.module)
         }
       }
     }

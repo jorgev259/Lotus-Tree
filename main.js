@@ -17,7 +17,6 @@ fs = require('fs-extra')
 const glob = require('glob')
 
 const { Client, Collection } = require('discord.js')
-const execa = require('execa')
 const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
 client.commands = new Collection()
 client.data = {}
@@ -234,34 +233,6 @@ function loadData (client, dataFiles) {
       client.data[name] = data
     }
   }
-}
-
-function npmInstall () {
-  return new Promise((resolve, reject) => {
-    execa('npm install').stdout.on('end', function () {
-      resolve()
-    }).pipe(process.stdout)
-  })
-}
-
-function npmInstallLegacy () {
-  return new Promise((resolve, reject) => {
-    var spawn = require('child_process').spawn
-
-    var ls = spawn(/^win/.test(process.platform) ? 'npm.cmd' : 'npm', ['install'])
-
-    ls.stdout.on('data', function (data) {
-      console.log(data.toString())
-    })
-
-    ls.stderr.on('data', function (data) {
-      console.log(data.toString())
-    })
-
-    ls.on('exit', function (code) {
-      resolve()
-    })
-  })
 }
 
 function git (command, repo = '') {
