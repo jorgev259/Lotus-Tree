@@ -1,5 +1,6 @@
 
 const Discord = require('discord.js')
+let {ownerGuild} = require('./data/config.json')
 
 var fs = require('fs-extra')
 
@@ -42,7 +43,7 @@ module.exports = {
   log: function (client, log) {
     console.log(log)
     if (client != null && client.channels.size > 0 && client.readyAt != null) {
-      client.channels.find(c => c.name === 'error-logs').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
+      client.guilds.get(ownerGuild).channels.find(c => c.name === 'error-logs').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
     }
   }
 }
