@@ -1,4 +1,5 @@
 var util = require('../../utilities.js')
+const config = require('../../data/config.json')
 
 module.exports = {
   events: {
@@ -12,7 +13,7 @@ module.exports = {
     },
     async message (client, db, moduleName, message) {
       if (!message.member) return
-      var prefix = '>'
+      var prefix = config.prefix
 
       if (message.content.startsWith(prefix) || message.content.startsWith('<@' + client.user.id + '>')) {
         var param = message.content.split(' ')
