@@ -1,6 +1,6 @@
 
 const Discord = require('discord.js')
-let {ownerGuild} = require('./data/config.json')
+let { ownerGuild } = require('./data/config.json')
 
 var fs = require('fs-extra')
 

@@ -7,6 +7,7 @@ module.exports = {
       client.guilds.forEach(guild => {
         checkGuild(client, db, guild)
       })
+      client.user.setActivity(`${config.prefix}help`, { type: 'PLAYING' })
     },
     guildCreate (client, db, guild) {
       checkGuild(client, db, guild)
