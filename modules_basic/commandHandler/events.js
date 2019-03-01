@@ -40,8 +40,10 @@ module.exports = {
 }
 
 function checkGuild (client, db, guild) {
-  client.data.moduleNames.forEach(module => {
-    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,false)').run(guild.id, module)
+  client.data.modules.forEach(moduleName => {
+    let state = false
+    if (client.data.moduleConfig[moduleName].default && client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
+    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,false)').run(guild.id, moduleName, state.toString())
   })
 
   for (let commandName of client.commands.keys()) {

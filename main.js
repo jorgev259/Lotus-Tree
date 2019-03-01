@@ -149,7 +149,7 @@ async function startBot () {
   let modules = glob.sync(`modules/*/`)
 
   client.data = {}
-  client.data.moduleNames = []
+  client.data.modules = []
 
   let eventModules = {}
   let error = true
@@ -167,7 +167,7 @@ async function startBot () {
 
         let jsObject = require(`./${file}`)
         if (jsObject.reqs) {
-          await jsObject.reqs(client, db)
+          await jsObject.reqs(client, db, moduleName)
         }
 
         outModule[type] = jsObject[type]
@@ -178,7 +178,7 @@ async function startBot () {
 
       commandKeys.forEach(commandName => {
         client.commands.set(commandName, outModule.commands[commandName])
-        if (moduleName !== 'commandHandler') client.commands.get(commandName).module = moduleName
+        client.commands.get(commandName).module = moduleName
 
         let command = outModule.commands[commandName]
         if (command.alias) {
@@ -193,7 +193,7 @@ async function startBot () {
         eventModules[eventName].push({ func: outModule.events[eventName], module: moduleName })
       })
 
-      if (moduleName !== 'commandHandler') client.data.moduleNames.push(moduleName)
+      client.data.modules.push(moduleName)
 
       console.log(`Loaded module ${moduleName} with ${commandKeys.length} commands and ${eventKeys.length} events`)
       error = false

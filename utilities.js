@@ -8,9 +8,9 @@ module.exports = {
   checkGuild (db, guild, moduleName) {
     return db.prepare('SELECT state FROM modules WHERE guild=? AND module=?').get(guild.id, moduleName).state === '1'
   },
-  permCheck (message, module, commandName, client, db) {
-    if (module && module !== 'commandHandler' && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(module, message.guild.id).state === '0') return false
-    if (module && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') return false
+  permCheck (message, moduleName, commandName, client, db) {
+    if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') return false
+    if (moduleName && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') return false
 
     let dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(commandName, message.guild.id)
     if (dbPerms.length === 0) return true
