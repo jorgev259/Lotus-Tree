@@ -5,6 +5,7 @@ module.exports = {
   events: {
     ready (client, db, module) {
       client.guilds.forEach(guild => {
+        console.log(guild.available)
         checkGuild(client, db, guild)
       })
       client.user.setActivity(`${config.prefix}help`, { type: 'PLAYING' })
