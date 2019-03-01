@@ -150,6 +150,7 @@ async function startBot () {
 
   client.data = {}
   client.data.modules = []
+  client.data.moduleConfig = {}
 
   let eventModules = {}
   let error = true
