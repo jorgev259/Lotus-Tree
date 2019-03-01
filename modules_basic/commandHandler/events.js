@@ -40,12 +40,10 @@ module.exports = {
 }
 
 function checkGuild (client, db, guild) {
-  client.data.modules.forEach(moduleName => {
+  client.data.modules.forEach(moduleObject => {
+    let moduleName = moduleObject.name
     let state = false
     if (client.data.moduleConfig[moduleName] && client.data.moduleConfig[moduleName].default && client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
-    console.log(guild.id)
-    console.log(moduleName)
-    console.log(state)
     db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, state ? '1' : '0')
   })
 
