@@ -1,5 +1,5 @@
 var util = require('../../utilities.js')
-const config = require('../../data/config.json')
+const config = require('../../data/config.js')
 
 module.exports = {
   events: {
@@ -42,7 +42,7 @@ function checkGuild (client, db, guild) {
   client.data.modules.forEach(moduleObject => {
     let moduleName = moduleObject.name
     let state = false
-    if (client.data.moduleConfig[moduleName] && client.data.moduleConfig[moduleName].default && client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
+    if (client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
     db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, state ? '1' : '0')
   })
 

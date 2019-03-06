@@ -164,7 +164,7 @@ async function startBot () {
       for (const file of files) {
         let pathArray = file.split('/')
         let type = pathArray[pathArray.length - 1].split('.js')[0]
-        if (type !== 'commands' && type !== 'events') continue
+        if (type !== 'commands' && type !== 'events' && type !== 'config') continue
 
         let jsObject = require(`./${file}`)
         if (jsObject.reqs) {
@@ -197,6 +197,10 @@ async function startBot () {
       client.data.modules.push(moduleName)
 
       console.log(`Loaded module ${moduleName} with ${commandKeys.length} commands and ${eventKeys.length} events`)
+
+      if (outModule.config) client.data.moduleConfig[moduleName] = outModule.config
+      else client.data.moduleConfig[moduleName] = {}
+
       error = false
     } catch (e) {
       if (error) console.log(`Failed to load ${moduleName}\n${e.stack}\n`)

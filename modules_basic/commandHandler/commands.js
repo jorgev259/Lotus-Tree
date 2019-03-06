@@ -1,12 +1,12 @@
 const pm2 = require('pm2')
 var util = require('../../utilities.js')
-const config = require('../../data/config.json')
+const config = require('../../data/config.js')
 
 module.exports = {
+  config: {
+    default: true
+  },
   async reqs (client, db, moduleName) {
-    if (!client.data.moduleConfig[moduleName]) client.data.moduleConfig[moduleName] = {}
-    client.data.moduleConfig[moduleName].default = true
-
     db.prepare(
       'CREATE TABLE IF NOT EXISTS config (guild TEXT, type TEXT, value TEXT)'
     ).run()
@@ -86,6 +86,9 @@ module.exports = {
 
     restart: {
       desc: 'Restarts the bot',
+      config: {
+        ownerOnly: true
+      },
       async execute (client, msg, param, db) {
         pm2.restart(config.pm2 || 'main', function (err, response) {
           if (err) {
