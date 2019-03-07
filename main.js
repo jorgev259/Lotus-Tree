@@ -159,6 +159,7 @@ async function startBot () {
 
     let outModule = { commands: {}, events: {} }
     let moduleName = module.split('/')[1]
+    console.log(module.split('/'))
 
     try {
       for (const file of files) {
@@ -200,6 +201,7 @@ async function startBot () {
 
       if (outModule.config) client.data.moduleConfig[moduleName] = outModule.config
       else client.data.moduleConfig[moduleName] = {}
+      console.log(client.data.moduleConfig)
 
       error = false
     } catch (e) {

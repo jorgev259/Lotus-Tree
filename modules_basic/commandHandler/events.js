@@ -42,6 +42,8 @@ function checkGuild (client, db, guild) {
   client.data.modules.forEach(moduleObject => {
     let moduleName = moduleObject
     let state = false
+    console.log(moduleName)
+    console.log(client.data.moduleConfig)
     if (client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
     db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, state ? '1' : '0')
   })
