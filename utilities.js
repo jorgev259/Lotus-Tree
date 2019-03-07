@@ -9,7 +9,7 @@ module.exports = {
     return db.prepare('SELECT state FROM modules WHERE guild=? AND module=?').get(guild.id, moduleName).state === '1'
   },
   async permCheck (message, moduleName, commandName, client, db) {
-    let command = client.commands.get(moduleName)
+    let command = client.commands.get(commandName)
     if (command.config.ownerOnly) {
       let app = await client.fetchApplication()
       return app.owner.id === message.author.id
