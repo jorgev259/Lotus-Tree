@@ -69,7 +69,8 @@ module.exports = {
         } else {
           let fields = Array.from(client.commands.keys()).map(idName => {
             let command = client.commands.get(idName)
-
+            console.log(command)
+            console.log(idName)
             if (util.permCheck(message, command.module, idName, client, db) && command.desc) {
               return {
                 name: idName,
