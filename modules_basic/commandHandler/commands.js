@@ -33,7 +33,7 @@ module.exports = {
         let id = param[2].toLowerCase()
         switch (mode) {
           case 'module':
-            if (!client.data.modules.includes(id)) return msg.channel.send(`${id} is not a valid module name.\nModules: ${client.data.modules.join(', ')}.`)
+            if (!Object.keys(client.data.moduleConfig).includes(id)) return msg.channel.send(`${id} is not a valid module name.\nModules: ${Object.keys(client.data.moduleConfig).join(', ')}.`)
             db.prepare('UPDATE modules SET state = NOT state WHERE module=? AND guild=?').run(id, msg.guild.id)
             msg.channel.send(`The module '${id}' has been ${db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(id, msg.guild.id).state === '0' ? 'disabled' : 'enabled'}.`)
             break
