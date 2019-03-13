@@ -1,36 +1,25 @@
-// Powered by LotusTree
-let fs = require('fs')
-if (!fs.existsSync('./package.json')) {
-  console.log('package.json not found. Adding default from package_basic.json. Use \'npm install to install dependencies\'')
-  fs.copyFileSync('package_basic.json', 'package.json')
-  process.exit(0)
-}
-if (!fs.existsSync('./node_modules')) {
-  console.log('node_modules not found. Use \'npm install to create it\'')
-  process.exit(0)
+(async () => {
+  // Powered by LotusTree
+  let fs = require('fs')
+  if (!fs.existsSync('./package.json')) {
+    console.log('package.json not found. Adding default from package_basic.json. Use \'npm install to install dependencies\'')
+    fs.copyFileSync('package_basic.json', 'package.json')
+    process.exit(0)
+  }
+  if (!fs.existsSync('./node_modules')) {
+    console.log('node_modules not found. Use \'npm install to create it\'')
+    process.exit(0)
   // await npmInstallLegacy()
-}
+  }
 
-const gitModule = require('git-promise')
+  const gitModule = require('git-promise')
 
-fs = require('fs-extra')
-const glob = require('glob')
+  fs = require('fs-extra')
+  const glob = require('glob')
 
-const { Client, Collection } = require('discord.js')
-const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
-client.commands = new Collection()
-client.data = {}
-let firstData = glob.sync(`data/*`)
+  let modulesObjectList = require('./data/modules.json')
+  const startBot = require('./bot.js')
 
-const Sqlite = require('better-sqlite3')
-let db = new Sqlite('data/database.db')
-
-var util = require('./utilities.js')
-
-loadData(client, firstData)
-checkModules()
-
-async function checkModules () {
   let remoteLotus = (await gitModule('ls-remote')).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
   let localLotus = (await gitModule('rev-parse HEAD')).split('\n')[0]
 
@@ -49,24 +38,23 @@ async function checkModules () {
 
   console.log(`LotusTree is up to date.`)
 
-  let modules = require('./data/modules.json')
   fs.removeSync('modules_old')
   fs.removeSync('package.json')
   fs.copySync('package_basic.json', 'package.json')
   fs.removeSync('./modules_new')
   fs.mkdirSync('./modules_new')
 
-  await Promise.all(modules.map(module => {
+  await Promise.all(modulesObjectList.map(moduleObject => {
     return new Promise(async (resolve, reject) => {
       let packageJSON = require('./package.json')
-      switch (module.type) {
+      switch (moduleObject.type) {
         case 'local':
-          let files = glob.sync(`${module.path}**`, { nodir: true }).map(e => { return { original: e, path: e.replace(module.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
+          let files = glob.sync(`${moduleObject.path}**`, { nodir: true }).map(e => { return { original: e, path: e.replace(moduleObject.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
           let promises = []
 
           files.forEach(file => {
             if (file.path.endsWith('package.json')) {
-              let deps = JSON.parse(fs.readFileSync(module.path + file.path))
+              let deps = JSON.parse(fs.readFileSync(moduleObject.path + file.path))
               Object.keys(deps.dependencies).forEach(key => {
                 if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
               })
@@ -90,23 +78,23 @@ async function checkModules () {
           break
 
         case 'git':
-          if (!(await fs.pathExists(`./repos/${module.name}/.git`))) {
-            await git(`clone ${module.url} ${module.name}`)
+          if (!(await fs.pathExists(`./repos/${moduleObject.name}/.git`))) {
+            await git(`clone ${moduleObject.url} ${moduleObject.name}`)
           } else {
-            let remote = (await git('ls-remote', module.name)).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
-            let local = (await git('rev-parse HEAD', module.name)).split('\n')[0]
+            let remote = (await git('ls-remote', moduleObject.name)).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
+            let local = (await git('rev-parse HEAD', moduleObject.name)).split('\n')[0]
 
             if (remote !== local) {
-              console.log(`Updating repository ${module.name}`)
-              await git('git pull', module.name)
-              console.log(`Updated repository ${module.name}`)
+              console.log(`Updating repository ${moduleObject.name}`)
+              await git('git pull', moduleObject.name)
+              console.log(`Updated repository ${moduleObject.name}`)
             } else {
-              console.log(`${module.name} is up to date.`)
+              console.log(`${moduleObject.name} is up to date.`)
             }
           }
 
           let promises2 = []
-          let fileList = glob.sync(`repos/${module.name}/**`, { nodir: true })
+          let fileList = glob.sync(`repos/${moduleObject.name}/**`, { nodir: true })
 
           fileList.forEach(file => {
             if (file.endsWith('package.json')) {
@@ -115,9 +103,9 @@ async function checkModules () {
                 if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
               })
             } else if (file.endsWith('.json')) {
-              promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'data/')))
+              promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'data/')))
             } else {
-              promises2.push(fs.copySync(file, file.replace(`repos/${module.name}/modules/`, 'modules_new/')))
+              promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'modules_new/')))
             }
           })
 
@@ -139,114 +127,16 @@ async function checkModules () {
   fs.removeSync('modules_new')
   fs.copySync('modules_basic', 'modules')
 
-  // await npmInstallLegacy()
   startBot()
-}
 
-async function startBot () {
-  let dataFiles = glob.sync(`data/*`)
-
-  let modules = glob.sync(`modules/*/`)
-
-  client.data = {}
-  client.data.modules = []
-  client.data.moduleConfig = {}
-
-  let eventModules = {}
-  let error = true
-  for (const module of modules) {
-    let files = glob.sync(`${module}/*`)
-
-    let outModule = { commands: {}, events: {} }
-    let moduleName = module.split('/')[1]
-
-    try {
-      for (const file of files) {
-        let pathArray = file.split('/')
-        let type = pathArray[pathArray.length - 1].split('.js')[0]
-        if (type !== 'commands' && type !== 'events' && type !== 'config') continue
-
-        let jsObject = require(`./${file}`)
-        if (jsObject.reqs) {
-          await jsObject.reqs(client, db, moduleName)
-        }
-
-        outModule[type] = jsObject[type]
-      }
-
-      let commandKeys = Object.keys(outModule.commands)
-      let eventKeys = Object.keys(outModule.events)
-
-      commandKeys.forEach(commandName => {
-        client.commands.set(commandName, outModule.commands[commandName])
-        client.commands.get(commandName).module = moduleName
-
-        let command = outModule.commands[commandName]
-        if (command.alias) {
-          command.alias.forEach(alias => {
-            client.commands.set(alias, outModule.commands[commandName])
-          })
-        }
-      })
-
-      eventKeys.forEach(eventName => {
-        if (!eventModules[eventName]) eventModules[eventName] = []
-        eventModules[eventName].push({ func: outModule.events[eventName], module: moduleName })
-      })
-
-      client.data.modules.push(moduleName)
-
-      console.log(`Loaded module ${moduleName} with ${commandKeys.length} commands and ${eventKeys.length} events`)
-
-      if (outModule.config) client.data.moduleConfig[moduleName] = outModule.config
-      else client.data.moduleConfig[moduleName] = {}
-
-      error = false
-    } catch (e) {
-      if (error) console.log(`Failed to load ${moduleName}\n${e.stack}\n`)
-      else console.log(`\nFailed to load ${moduleName}\n${e.stack}\n`)
-
-      error = true
-      continue
-    }
-  }
-
-  loadData(client, dataFiles)
-
-  Object.keys(eventModules).forEach(eventName => {
-    client.on(eventName, (...args) => {
-      eventModules[eventName].forEach(item => {
-        item.func(client, db, item.module, ...args)
+  function git (command, repo = '') {
+    return new Promise((resolve, reject) => {
+      gitModule(command, { cwd: `repos/${repo}` }).then(res => {
+        resolve(res)
+      }).fail(err => {
+        console.log(err)
+        reject(err)
       })
     })
-  })
-
-  process.on('unhandledRejection', err => { if (err.message !== 'Unknown User') util.log(client, err.stack) })
-  client.login(client.data.tokens.discord)
-}
-
-function loadData (client, dataFiles) {
-  for (const file of dataFiles) {
-    if (!file.endsWith('.json')) continue
-    const data = require(`./${file}`)
-
-    let pathArray = file.split('/')
-    if (pathArray.length > 2) {
-
-    } else {
-      let name = pathArray[pathArray.length - 1].split('.json')[0]
-      client.data[name] = data
-    }
   }
-}
-
-function git (command, repo = '') {
-  return new Promise((resolve, reject) => {
-    gitModule(command, { cwd: `repos/${repo}` }).then(res => {
-      resolve(res)
-    }).fail(err => {
-      console.log(err)
-      reject(err)
-    })
-  })
-}
+})()

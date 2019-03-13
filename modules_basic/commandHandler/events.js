@@ -39,8 +39,7 @@ module.exports = {
 }
 
 function checkGuild (client, db, guild) {
-  client.data.modules.forEach(moduleObject => {
-    let moduleName = moduleObject.name
+  Object.keys(client.data.moduleConfig).forEach(moduleName => {
     let state = false
 
     if (client.data.moduleConfig[moduleName].default) state = client.data.moduleConfig[moduleName].default
