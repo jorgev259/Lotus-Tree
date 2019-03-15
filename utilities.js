@@ -25,6 +25,7 @@ module.exports = {
       })
 
       if (perms.channel.length === 0 || perms.channel.includes(message.channel.name)) {
+        if (perms.role.length === 0 && perms.user.length === 0) return true
         if (perms.role.length > 0 && message.member.roles.some(r => perms.role.includes(r.name))) return true
 
         if (perms.user.length > 0 && perms.user.includes(message.author.id)) return true
