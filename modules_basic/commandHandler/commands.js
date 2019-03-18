@@ -8,7 +8,7 @@ module.exports = {
   },
   async reqs (client, db, moduleName) {
     db.prepare(
-      'CREATE TABLE IF NOT EXISTS config (guild TEXT, type TEXT, value TEXT)'
+      'CREATE TABLE IF NOT EXISTS config (guild TEXT, type TEXT, value TEXT, PRIMARY KEY(`guild`,`type`))'
     ).run()
     db.prepare(
       'CREATE TABLE IF NOT EXISTS modules (guild TEXT, module TEXT, state TEXT, PRIMARY KEY(`guild`,`module`))'
@@ -22,8 +22,14 @@ module.exports = {
   },
 
   commands: {
+    config: {
+      usage: `config [${Object.keys(config.default).join('/')}] [value]`,
+      desc: 'Enables or disables a command/module.',
+      async execute (client, msg, param, db) {}
+    },
+
     toggle: {
-      usage: 'Usage: toggle [module/command] [name]',
+      usage: 'toggle [module/command] [name]',
       desc: 'Enables or disables a command/module.',
       async execute (client, msg, param, db) {
         if (!param[1] || !param[2]) return msg.channel.send('Usage: toggle [module/command] [name]')
@@ -51,7 +57,7 @@ module.exports = {
       }
     },
     help: {
-      usage: 'Usage: help command',
+      usage: 'help [command]',
       desc: 'This command displays information about a command.',
       async execute (client, message, param, db) {
         if (param[1]) {
@@ -63,7 +69,8 @@ module.exports = {
             let command = client.commands.get(param[1].toLowerCase())
 
             if (util.permCheck(message, command.module, param[1].toLowerCase(), client, db) && command.desc) {
-              message.channel.send(`${command.desc}${command.usage ? ` Usage: ${command.usage}` : ''}`)
+              var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
+              message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`)
             }
           }
         } else {

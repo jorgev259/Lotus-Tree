@@ -7,14 +7,14 @@ module.exports = {
       client.guilds.forEach(guild => {
         checkGuild(client, db, guild)
       })
-      client.user.setActivity(`${config.prefix}help`, { type: 'PLAYING' })
+      client.user.setActivity(`${config.default.prefix}help`, { type: 'PLAYING' })
     },
     guildCreate (client, db, guild) {
       checkGuild(client, db, guild)
     },
     async message (client, db, moduleName, message) {
       if (!message.member) return
-      var prefix = config.prefix
+      var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
 
       if (message.content.startsWith(prefix) || message.content.startsWith('<@' + client.user.id + '>')) {
         var param = message.content.split(' ')
@@ -50,4 +50,6 @@ function checkGuild (client, db, guild) {
     let command = client.commands.get(commandName)
     if (command.module) db.prepare('INSERT OR IGNORE INTO commands (guild,command,state,module) VALUES (?,?,true,?)').run(guild.id, commandName, command.module)
   }
+
+  Object.keys(config.default).forEach(key => db.prepare('INSERT OR IGNORE INTO config (guild,type,value) VALUES (?,?,?)').run(guild.id, key, config.default[key]))
 }
