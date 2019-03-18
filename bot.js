@@ -42,6 +42,7 @@ module.exports = async function () {
         }
 
         outModule[type] = jsObject[type]
+        if (jsObject.config) outModule.config = jsObject.config
       }
 
       let commandKeys = Object.keys(outModule.commands)
