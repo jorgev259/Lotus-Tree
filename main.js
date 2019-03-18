@@ -41,6 +41,8 @@
   fs.removeSync('modules_old')
   fs.removeSync('package.json')
   fs.copySync('package_basic.json', 'package.json')
+  fs.removeSync('./modules')
+  fs.mkdirSync('./modules')
   fs.removeSync('./modules_new')
   fs.mkdirSync('./modules_new')
 
@@ -49,7 +51,10 @@
       let packageJSON = require('./package.json')
       switch (moduleObject.type) {
         case 'local':
-          let files = glob.sync(`${moduleObject.path}**`, { nodir: true }).map(e => { return { original: e, path: e.replace(moduleObject.path, '') } }).filter(e => !e.path.startsWith('node_modules'))
+          let files = glob.sync(`${moduleObject.path}**`, { nodir: true })
+            .map(e => { return { original: e, path: e.replace(moduleObject.path, '') } })
+            .filter(e => !e.path.startsWith('node_modules') && (!moduleObject.modules || moduleObject.modules.includes(e.path.split('/')[1])))
+
           let promises = []
 
           files.forEach(file => {
@@ -95,6 +100,7 @@
 
           let promises2 = []
           let fileList = glob.sync(`repos/${moduleObject.name}/**`, { nodir: true })
+            .filter(e => !moduleObject.modules || moduleObject.modules.includes(e.split('/')[3]))
 
           fileList.forEach(file => {
             if (file.endsWith('package.json')) {
