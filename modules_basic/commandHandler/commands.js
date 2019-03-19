@@ -160,8 +160,8 @@ module.exports = {
     },
 
     perms: {
-      desc: 'Adds or removes permissions to a command.',
-      usage: 'perms [command] <add│remove> <#channel│@user│roleName>',
+      desc: 'Adds, removes or lists permissions to a command.',
+      usage: 'perms [command] <add│remove|list> <#channel│@user│roleName>',
       async execute (client, message, param, db) {
         var name = param[1].toLowerCase()
         var type = param[2].toLowerCase()
@@ -194,11 +194,8 @@ module.exports = {
                   message.mentions.channels.first().name
                 )
             } else {
-              await db
-                .prepare(
-                  'INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)'
-                )
-                .run(message.guild.id, name, 'role', param.join(' '))
+              if (!message.guild.roles.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
+              db.prepare('INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)').run(message.guild.id, name, 'role', param.join(' '))
             }
             message.reply(param.join(' ') + ' is now allowed to use ' + name)
             break
@@ -241,13 +238,16 @@ module.exports = {
               perms[element.type].push(element.perm)
             })
 
+            let types = Object.keys(perms)
+            if (types.length === 0) return message.channel.send(`No permissions set (Anyone can use \`${name}\`!)`)
+
             const embed = new MessageEmbed()
               .setTitle(`${name} permissions`)
 
-            Object.keys(perms).forEach(e => {
-              embed.addField(e, perms[e].join('\n'))
-              embed.addBlankField()
-            })
+            for (let i; i < types.length; i++) {
+              embed.addField(types[i], perms[types[i]].join('\n'))
+              if (i !== types.length - 1) embed.addBlankField()
+            }
 
             message.channel.send(embed)
             break
