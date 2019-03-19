@@ -1,6 +1,7 @@
 const pm2 = require('pm2')
 var util = require('../../utilities.js')
 const config = require('../../data/config.js')
+const { MessageEmbed } = require('discord.js')
 
 module.exports = {
   config: {
@@ -80,7 +81,7 @@ module.exports = {
             if (util.permCheck(message, command.module, idName, client, db) && command.desc) {
               return {
                 name: idName,
-                value: `${command.desc}${command.usage ? ` ${command.usage}` : ''}`
+                value: `${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`
               }
             }
           }).filter(e => e !== undefined)
@@ -159,12 +160,14 @@ module.exports = {
     },
 
     perms: {
-      desc:
-        'Adds or removes permissions to a command. Usage: perms <command> <add│remove> <#channel│@user│roleName>',
+      desc: 'Adds or removes permissions to a command.',
+      usage: 'perms [command] <add│remove> <#channel│@user│roleName>',
       async execute (client, message, param, db) {
-        var name = param[1]
-        var type = param[2]
+        var name = param[1].toLowerCase()
+        var type = param[2].toLowerCase()
         param = param.slice(3)
+
+        if (!client.commands.has(name)) return message.channel.send(`\`${name}\` is not a valid command`)
 
         switch (type) {
           case 'add':
@@ -204,13 +207,13 @@ module.exports = {
             if (message.mentions.users.size > 0) {
               await db
                 .prepare(
-                  "DELETE FROM perms WHERE guild='?' command='?' AND type='user' AND item='?'"
+                  "DELETE FROM perms WHERE guild=? AND command=? AND type='user' AND item=?"
                 )
                 .run(message.guild.id, name, message.mentions.users.first().id)
             } else if (message.mentions.channels.size > 0) {
               await db
                 .prepare(
-                  "DELETE FROM perms WHERE guild='?' command='?' AND type='channel' AND item='?'"
+                  "DELETE FROM perms WHERE guild=? AND command=? AND type='channel' AND item=?"
                 )
                 .run(
                   message.guild.id,
@@ -220,13 +223,33 @@ module.exports = {
             } else {
               await db
                 .prepare(
-                  "DELETE FROM perms WHERE guild='?' command='?' AND type='role' AND item='?'"
+                  "DELETE FROM perms WHERE guild=? AND command=? AND type='role' AND item=?"
                 )
                 .run(message.guild.id, name, param.join(' '))
             }
             message.reply(
               'Removed ' + param.join(' ') + ' from the command ' + name
             )
+            break
+
+          case 'list':
+            let dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(name, message.guild.id)
+
+            let perms = {}
+            dbPerms.forEach(element => {
+              if (!perms[element.type]) perms[element.type] = []
+              perms[element.type].push(element.perm)
+            })
+
+            const embed = new MessageEmbed()
+              .setTitle(`${name} permissions`)
+
+            Object.keys(perms).forEach(e => {
+              embed.addField(e, perms[e].join('\n'))
+              embed.addBlankField()
+            })
+
+            message.channel.send(embed)
             break
         }
       }
