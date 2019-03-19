@@ -244,7 +244,7 @@ module.exports = {
             const embed = new MessageEmbed()
               .setTitle(`${name} permissions`)
 
-            for (let i; i < types.length; i++) {
+            for (let i = 0; i < types.length; i++) {
               embed.addField(types[i], perms[types[i]].join('\n'))
               if (i !== types.length - 1) embed.addBlankField()
             }
