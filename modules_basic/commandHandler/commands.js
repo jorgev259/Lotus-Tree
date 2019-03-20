@@ -116,6 +116,7 @@ module.exports = {
             'value': db.prepare('SELECT command as name,state FROM commands WHERE guild=? AND module=?').all(msg.guild.id, module.name).map(command => `${command.name}${command.state === '0' ? ' (disabled)' : ''}`).join('\n') || '\u200B'
           }
         })
+
         let embed = {
           'title': 'Available Commands (per module)',
           'color': 4128386,
