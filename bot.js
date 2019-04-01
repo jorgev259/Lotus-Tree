@@ -45,8 +45,8 @@ module.exports = async function () {
         if (jsObject.config) outModule.config = jsObject.config
       }
 
-      let commandKeys = Object.keys(outModule.commands) || []
-      let eventKeys = Object.keys(outModule.events) || []
+      let commandKeys = outModule.commands ? Object.keys(outModule.commands) : []
+      let eventKeys = outModule.events ? Object.keys(outModule.events) : []
 
       commandKeys.forEach(commandName => {
         client.commands.set(commandName, outModule.commands[commandName])
