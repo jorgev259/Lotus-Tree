@@ -9,33 +9,56 @@ module.exports = {
   checkGuild (db, guild, moduleName) {
     return db.prepare('SELECT state FROM modules WHERE guild=? AND module=?').get(guild.id, moduleName).state === '1'
   },
-  async permCheck (message, moduleName, commandName, client, db) {
+  async permCheck (message, moduleName, commandName, client, db, extra = false) {
     let command = client.commands.get(commandName)
     if (command && command.config && command.config.ownerOnly) {
       if (config.ownerId) return config.ownerId === message.author.id
       else {
         let app = await client.fetchApplication()
-        return app.owner.id === message.author.id
+
+        if (extra) return { allowed: app.owner.id === message.author.id }
+        else return app.owner.id === message.author.id
       }
     } else {
-      if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') return false
-      if (moduleName && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') return false
+      if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') {
+        if (extra) return { allowed: false }
+        else return false
+      }
+      if (moduleName && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') {
+        if (extra) return { allowed: false }
+        else return false
+      }
 
       let dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(commandName, message.guild.id)
-      if (dbPerms.length === 0) return true
+      if (dbPerms.length === 0) {
+        if (extra) return { allowed: true }
+        else return true
+      }
       let perms = { role: [], user: [], channel: [] }
       dbPerms.forEach(element => {
         perms[element.type].push(element.perm)
       })
 
       if (perms.channel.length === 0 || perms.channel.includes(message.channel.name)) {
-        if (perms.role.length === 0 && perms.user.length === 0) return true
-        if (perms.role.length > 0 && message.member.roles.some(r => perms.role.includes(r.name))) return true
+        let infoOut = { allowed: true }
+        if (perms.channel.length > 0) infoOut.channel = perms.channel
+        if (perms.role.length === 0 && perms.user.length === 0) {
+          if (extra) return infoOut
+          else return true
+        }
+        if (perms.role.length > 0 && message.member.roles.some(r => perms.role.includes(r.name))) {
+          if (extra) return infoOut
+          else return true
+        }
 
-        if (perms.user.length > 0 && perms.user.includes(message.author.id)) return true
+        if (perms.user.length > 0 && perms.user.includes(message.author.id)) {
+          if (extra) return infoOut
+          else return true
+        }
       }
 
-      return false
+      if (extra) return { allowed: false }
+      else return false
     }
   },
 

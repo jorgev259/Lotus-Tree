@@ -85,11 +85,11 @@ module.exports = {
         } else {
           let fields = (await Promise.all(Array.from(client.commands.keys()).map(async idName => {
             let command = client.commands.get(idName)
-
-            if (await util.permCheck(message, command.module, idName, client, db) && command.desc) {
+            let permData = await util.permCheck(message, command.module, idName, client, db, true)
+            if (permData.allowed && command.desc) {
               return {
                 name: idName,
-                value: `${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`
+                value: `${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}${permData.channel ? ` (Usable on: ${permData.channel.map(e => `#${e}`).join(' ')})` : ''}`
               }
             }
           }))).filter(e => e !== undefined)
