@@ -115,7 +115,7 @@ module.exports = {
       },
       async execute (client, msg, param, db) {
         try {
-          db.exec(param.slice(1))
+          db.exec(param.slice(1).join(' '))
           msg.channel.send('Query finished')
         } catch (err) {
           console.log(err)
