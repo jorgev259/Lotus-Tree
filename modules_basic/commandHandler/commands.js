@@ -69,16 +69,16 @@ module.exports = {
           ) {
             let command = client.commands.get(param[1].toLowerCase())
 
-            if (util.permCheck(message, command.module, param[1].toLowerCase(), client, db) && command.desc) {
+            if (await util.permCheck(message, command.module, param[1].toLowerCase(), client, db) && command.desc) {
               var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
               message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`)
             }
           }
         } else {
-          let fields = Array.from(client.commands.keys()).map(idName => {
+          let fields = Array.from(client.commands.keys()).map(async idName => {
             let command = client.commands.get(idName)
 
-            if (util.permCheck(message, command.module, idName, client, db) && command.desc) {
+            if (await util.permCheck(message, command.module, idName, client, db) && command.desc) {
               return {
                 name: idName,
                 value: `${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`
