@@ -75,7 +75,7 @@ module.exports = {
             }
           }
         } else {
-          let fields = await Promise.all(Array.from(client.commands.keys()).map(async idName => {
+          let fields = (await Promise.all(Array.from(client.commands.keys()).map(async idName => {
             let command = client.commands.get(idName)
 
             if (await util.permCheck(message, command.module, idName, client, db) && command.desc) {
@@ -84,7 +84,7 @@ module.exports = {
                 value: `${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`
               }
             }
-          })).filter(e => e !== undefined)
+          }))).filter(e => e !== undefined)
           console.log(fields)
 
           let embed = { fields: fields }
