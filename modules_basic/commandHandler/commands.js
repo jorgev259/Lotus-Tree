@@ -25,8 +25,16 @@ module.exports = {
   commands: {
     config: {
       usage: `config [${Object.keys(config.default).join('/')}] [value]`,
-      desc: 'Enables or disables a command/module.',
-      async execute (client, msg, param, db) {}
+      desc: 'Changes a bot configuration.',
+      async execute (client, msg, param, db) {
+        let option = param[1].toLowerCase()
+        if (!Object.keys(config.default).includes(option)) return msg.channel.send(`'${option}' is not a valid option. Options: ${Object.keys(config.default).join(', ')}`)
+        let data = param.slice(2).join(' ')
+
+        db.prepare('UPDATE config SET value = ? WHERE guild = ? AND type=?').run(data, msg.guild.id, option)
+        // var channel = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(guild.id, 'twitter_channel').value
+        msg.channel.send('Settings updated')
+      }
     },
 
     toggle: {
