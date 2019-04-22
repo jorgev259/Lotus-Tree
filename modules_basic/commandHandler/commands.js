@@ -116,7 +116,9 @@ module.exports = {
       async execute (client, msg, param, db) {
         try {
           db.prepare(param.slice(1)).run()
+          msg.channel.send('Query finished')
         } catch (err) {
+          console.log(err)
           msg.channel.send('Something went wrong!')
         }
       }
