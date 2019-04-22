@@ -85,7 +85,6 @@ module.exports = {
               }
             }
           }))).filter(e => e !== undefined)
-          console.log(fields)
 
           let embed = { fields: fields }
           message.author.send({ embed })
