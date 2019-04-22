@@ -39,7 +39,7 @@ module.exports = {
         perms[element.type].push(element.perm)
       })
 
-      if (perms.channel.length === 0 || perms.channel.includes(message.channel.name)) {
+      if (perms.channel.length === 0 || perms.channel.includes(message.channel.name) || extra) {
         let infoOut = { allowed: true }
         if (perms.channel.length > 0) infoOut.channel = perms.channel
         if (perms.role.length === 0 && perms.user.length === 0) {
