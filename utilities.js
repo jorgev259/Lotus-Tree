@@ -12,6 +12,7 @@ module.exports = {
     let command = client.commands.get(commandName)
     if (command && command.config && command.config.ownerOnly) {
       let app = await client.fetchApplication()
+      console.log(app.owner)
       return app.owner.id === message.author.id
     } else {
       if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') return false
