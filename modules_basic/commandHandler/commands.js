@@ -77,9 +77,9 @@ module.exports = {
             (client.commands.get(name).usage || client.commands.get(name).desc)
           ) {
             let command = client.commands.get(param[1].toLowerCase())
-
-            if (await util.permCheck(message, command.module, param[1].toLowerCase(), client, db) && command.desc) {
-              message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`)
+            let permData = await util.permCheck(message, command.module, param[1].toLowerCase(), client, db, true)
+            if (permData.allowed && command.desc) {
+              message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}${permData.channel ? ` (Usable on: ${permData.channel.map(e => `#${e}`).join(' ')})` : ''}`)
             }
           }
         } else {
