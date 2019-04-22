@@ -69,6 +69,7 @@ module.exports = {
       usage: 'help [command]',
       desc: 'This command displays information about a command.',
       async execute (client, message, param, db) {
+        var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
         if (param[1]) {
           let name = param[1].toLowerCase()
           if (
@@ -78,7 +79,6 @@ module.exports = {
             let command = client.commands.get(param[1].toLowerCase())
 
             if (await util.permCheck(message, command.module, param[1].toLowerCase(), client, db) && command.desc) {
-              var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
               message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}`)
             }
           }
