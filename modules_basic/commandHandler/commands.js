@@ -107,6 +107,21 @@ module.exports = {
       }
     },
 
+    sql: {
+      desc: 'Runs a sql query against the database.',
+      usage: 'sql [query]',
+      config: {
+        ownerOnly: true
+      },
+      async execute (client, msg, param, db) {
+        try {
+          db.prepare(param.slice(1)).run()
+        } catch (err) {
+          msg.channel.send('Something went wrong!')
+        }
+      }
+    },
+
     commands: {
       desc: 'Displays all commands and modules available',
       async execute (client, msg, param, db) {
