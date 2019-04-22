@@ -1,6 +1,7 @@
 
 const Discord = require('discord.js')
-let { ownerGuild } = require('./data/config.js')
+let config = require('./data/config.js')
+let { ownerGuild } = config
 
 var fs = require('fs-extra')
 
@@ -11,9 +12,11 @@ module.exports = {
   async permCheck (message, moduleName, commandName, client, db) {
     let command = client.commands.get(commandName)
     if (command && command.config && command.config.ownerOnly) {
-      let app = await client.fetchApplication()
-      console.log(app.owner)
-      return app.owner.id === message.author.id
+      if (config.ownerId) return config.ownerId === message.author.id
+      else {
+        let app = await client.fetchApplication()
+        return app.owner.id === message.author.id
+      }
     } else {
       if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') return false
       if (moduleName && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') return false
