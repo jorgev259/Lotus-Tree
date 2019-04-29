@@ -147,14 +147,6 @@ module.exports = {
           'color': 4128386,
           'fields': fields
         }
-
-        let customs = db.prepare('SELECT name FROM customs WHERE guild=?').all(msg.guild.id)
-        if (customs.length > 0) {
-          embed.fields.push({
-            'name': 'Custom Commands',
-            'value': customs.map(e => e.name).join('\n')
-          })
-        }
         msg.channel.send({ embed })
       }
     },
