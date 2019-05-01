@@ -106,12 +106,9 @@ module.exports = {
         ownerOnly: true
       },
       async execute (client, msg, param, db) {
-        pm2.restart(config.pm2 || 'main', function (err, response) {
-          if (err) {
-            console.log(err)
-            msg.channel.send('Something went wrong')
-          }
-        })
+        await msg.channel.send('Restarting...')
+        await client.user.setActivity('Restarting...', { type: 'PLAYING' })
+        process.exit()
       }
     },
 
