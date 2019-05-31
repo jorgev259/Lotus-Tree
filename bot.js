@@ -93,7 +93,8 @@ module.exports = async function () {
   })
 
   process.on('unhandledRejection', err => { if (err.message !== 'Unknown User') util.log(client, err.stack) })
-  client.login(client.data.tokens.discord)
+  console.log(client.data.tokens)
+  client.login(client.data.tokens.discord).catch(err => console.log(err))
 }
 
 function loadData (client, dataFiles) {
