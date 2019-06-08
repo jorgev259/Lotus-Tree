@@ -98,6 +98,10 @@ module.exports = async function () {
   })
 
   client.login(client.data.tokens.discord).catch(err => console.log(err))
+
+  client.on('debug', function (info) {
+    console.log(`debug -> ${info}`)
+  })
 }
 
 function loadData (client, dataFiles) {
