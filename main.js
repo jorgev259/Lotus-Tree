@@ -17,6 +17,7 @@
   fs = require('fs-extra')
   const glob = require('glob')
 
+  await fs.remove('./pnpm-lock.yaml')
   let modulesObjectList = require('./data/modules.json')
   const startBot = require('./bot.js')
 

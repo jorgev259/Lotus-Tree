@@ -6,3 +6,4 @@ modules_old/**
 data/**
 temp/**
 repos/**
+pnpm-lock.yaml
