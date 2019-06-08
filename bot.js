@@ -3,6 +3,7 @@ const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
 client.commands = new Collection()
 client.data = {}
 
+var argv = require('minimist')(process.argv.slice(2))
 const glob = require('glob')
 let firstData = glob.sync(`data/*`)
 
@@ -93,15 +94,16 @@ module.exports = async function () {
   })
 
   process.on('unhandledRejection', err => {
-    console.log(err)
     if (err.message !== 'Unknown User') util.log(client, err.stack)
   })
 
-  client.login(client.data.tokens.discord).catch(err => console.log(err))
+  client.login(client.data.tokens.discord)
 
-  client.on('debug', function (info) {
-    console.log(`debug -> ${info}`)
-  })
+  if (argv.d) {
+    client.on('debug', function (info) {
+      console.log(`debug -> ${info}`)
+    })
+  }
 }
 
 function loadData (client, dataFiles) {
