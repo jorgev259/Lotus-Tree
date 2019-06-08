@@ -92,8 +92,11 @@ module.exports = async function () {
     })
   })
 
-  process.on('unhandledRejection', err => { if (err.message !== 'Unknown User') util.log(client, err.stack) })
-  console.log(client.data.tokens)
+  process.on('unhandledRejection', err => {
+    console.log(err)
+    if (err.message !== 'Unknown User') util.log(client, err.stack)
+  })
+
   client.login(client.data.tokens.discord).catch(err => console.log(err))
 }
 
