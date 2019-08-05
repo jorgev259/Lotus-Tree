@@ -95,7 +95,7 @@
 
           fileList.forEach(file => {
             if (file.endsWith('dependencies.json')) {
-              let moduleName = file.split('repos/twitter/modules/')[1].split('/')[0]
+              let moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
               promises2.push(fs.copySync(file, `data/${moduleName}_dependencies.json`))
             } else if (file.endsWith('.json')) {
               promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'data/')))
