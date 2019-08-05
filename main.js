@@ -114,7 +114,7 @@
   fs.removeSync('modules_new')
   fs.copySync('modules_basic', 'modules')
   let packageJSON = require('./package.json')
-  console.log(packageJSON)
+  console.log(packageJSON.dependencies)
   let fileList = glob.sync(`data/**_dependencies.json`, { nodir: true })
   let change = false
   fileList.forEach(file => {
@@ -126,7 +126,7 @@
       }
     })
   })
-  console.log(packageJSON)
+  console.log(packageJSON.dependencies)
   if (change) {
     fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
     console.log(`Dependencies updated. Run "npm i" to install them`)
