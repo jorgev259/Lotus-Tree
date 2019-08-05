@@ -128,10 +128,9 @@
   })
 
   if (change) {
-    fs.removeSync('package.json')
     fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
     console.log(`Dependencies updated. Run "npm i" to install them`)
-    process.exit(0)
+    // process.exit(0)
   }
 
   startBot()
