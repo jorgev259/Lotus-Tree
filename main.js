@@ -9,7 +9,6 @@
   if (!fs.existsSync('./node_modules')) {
     console.log('node_modules not found. Use \'npm install to create it\'')
     process.exit(0)
-  // await npmInstallLegacy()
   }
 
   const gitModule = require('git-promise')
@@ -49,7 +48,6 @@
 
   await Promise.all(modulesObjectList.map(moduleObject => {
     return new Promise(async (resolve, reject) => {
-      let packageJSON = require('./package.json')
       switch (moduleObject.type) {
         case 'local':
           let files = glob.sync(`${moduleObject.path}**`, { nodir: true })
@@ -71,15 +69,7 @@
             }
           })
 
-          Promise.all(promises).then(() => {
-            console.log('Updating package.json')
-            fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
-
-            resolve(packageJSON)
-          }).catch(err => {
-            console.log(err)
-            resolve(err)
-          })
+          resolve()
 
           break
 
@@ -104,26 +94,16 @@
             .filter(e => !moduleObject.modules || moduleObject.modules.includes(e.split('/')[3]))
 
           fileList.forEach(file => {
-            if (file.endsWith('package.json')) {
-              let deps = require(`./${file}`)
-              Object.keys(deps.dependencies).forEach(key => {
-                if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
-              })
+            if (file.endsWith('dependencies.json')) {
+              let moduleName = file.split('repos/twitter/modules/')[1].split('/')[0]
+              promises2.push(fs.copySync(file, `data/${moduleName}_dependencies.json`))
             } else if (file.endsWith('.json')) {
               promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'data/')))
             } else {
               promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'modules_new/')))
             }
           })
-
-          Promise.all(promises2).then(() => {
-            console.log('Updating package.json')
-            fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
-            resolve(packageJSON)
-          }).catch(err => {
-            console.log(err)
-            resolve(err)
-          })
+          resolve()
 
           break
       }
@@ -133,6 +113,23 @@
   fs.copySync('modules_new', 'modules')
   fs.removeSync('modules_new')
   fs.copySync('modules_basic', 'modules')
+  let packageJSON = require('./package.json')
+  let fileList = glob.sync(`data/**_dependencies.json`, { nodir: true })
+  let change = false
+  fileList.forEach(file => {
+    let deps = require(`./${file}`)
+    Object.keys(deps).forEach(depKey => {
+      if (!packageJSON.dependencies[depKey] || packageJSON.dependencies[depKey] !== deps[depKey]) {
+        change = true
+        packageJSON.dependencies[depKey] = deps[depKey]
+      }
+    })
+  })
+  if (change) {
+    fs.outputFileSync('package.json', JSON.stringify(packageJSON, null, 4))
+    console.log(`Dependencies updated. Run "npm i" to install them`)
+    process.exit(0)
+  }
 
   startBot()
 
