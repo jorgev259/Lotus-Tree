@@ -113,7 +113,7 @@ function loadData (client, dataFiles) {
 
     let pathArray = file.split('/')
     if (pathArray.length > 2) {
-
+      console.log(pathArray)
     } else {
       let name = pathArray[pathArray.length - 1].split('.json')[0]
       client.data[name] = data
