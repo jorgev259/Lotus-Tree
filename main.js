@@ -57,11 +57,9 @@
           let promises = []
 
           files.forEach(file => {
-            if (file.path.endsWith('package.json')) {
-              let deps = JSON.parse(fs.readFileSync(moduleObject.path + file.path))
-              Object.keys(deps.dependencies).forEach(key => {
-                if (!packageJSON.dependencies[key]) packageJSON.dependencies[key] = deps.dependencies[key]
-              })
+            if (file.endsWith('dependencies.json')) {
+              let moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
+              promises2.push(fs.copySync(file, `data/${moduleName}_dependencies.json`))
             } else if (file.path.endsWith('.json')) {
               promises.push(fs.copySync(file.original, file.path.replace('modules/', 'data/')))
             } else {
