@@ -112,6 +112,7 @@ function loadData (client, dataFiles) {
     const data = require(`./${file}`)
 
     let pathArray = file.split('/')
+    console.log(pathArray)
     if (pathArray.length > 2) {
       console.log(pathArray)
     } else {
