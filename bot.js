@@ -15,7 +15,7 @@ var util = require('./utilities.js')
 loadData(client, firstData)
 
 module.exports = async function () {
-  let dataFiles = glob.sync(`data/*`)
+  let dataFiles = glob.sync(`data/**`)
 
   let modules = glob.sync(`modules/*/`)
 
@@ -112,11 +112,13 @@ function loadData (client, dataFiles) {
     const data = require(`./${file}`)
 
     let pathArray = file.split('/')
-    console.log(pathArray)
+    let name = pathArray[pathArray.length - 1].split('.json')[0]
     if (pathArray.length > 2) {
-      console.log(pathArray)
+      let roots = pathArray.slice(1)
+      roots.pop()
+      roots.push(name)
+      client.data[roots.join('.')] = data
     } else {
-      let name = pathArray[pathArray.length - 1].split('.json')[0]
       client.data[name] = data
     }
   }
