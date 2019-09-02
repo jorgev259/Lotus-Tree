@@ -55,7 +55,7 @@
             .filter(e => !e.path.startsWith('node_modules') && (!moduleObject.modules || moduleObject.modules.includes(e.path.split('/')[1])))
 
           let promises = []
-          files.forEach(file => {         
+          files.forEach(file => {
             if (file.path.endsWith('dependencies.json')) {
               let moduleName = file.path.split(`modules/`)[1].split('/')[0]
               promises.push(fs.copySync(file.original, `data/${moduleName}_dependencies.json`))

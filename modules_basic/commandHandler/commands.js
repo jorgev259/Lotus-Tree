@@ -112,6 +112,17 @@ module.exports = {
       }
     },
 
+    eval: {
+      desc: 'Runs any code (DANGEROUS)',
+      config: {
+        ownerOnly: true
+      },
+      async execute (client, msg, param, db) {
+        let result = eval(param.slice(1).join(' '))
+        msg.channel.send(result || 'Completed!')
+      }
+    },
+
     sql: {
       desc: 'Runs a sql query against the database.',
       usage: 'sql [query]',
