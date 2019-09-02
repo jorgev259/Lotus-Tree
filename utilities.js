@@ -12,7 +12,8 @@ module.exports = {
   async permCheck (message, moduleName, commandName, client, db, extra = false) {
     let command = client.commands.get(commandName)
     if (command && command.config && command.config.ownerOnly) {
-      if (config.ownerId) return (config.ownerId === message.author.id) || (config.owners.includes(message.author.id))
+      if (config.ownerId) return config.ownerId === message.author.id
+      if (config.owners) return config.owners.includes(message.author.id)
       else {
         let app = await client.fetchApplication()
 
