@@ -118,7 +118,9 @@ module.exports = {
         ownerOnly: true
       },
       async execute (client, msg, param, db) {
+        console.log(param.slice(1).join(' '))
         let result = eval(param.slice(1).join(' '))
+        console.log(result)
         msg.channel.send(result || 'Completed!')
       }
     },
