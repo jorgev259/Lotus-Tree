@@ -142,6 +142,23 @@ module.exports = {
       }
     },
 
+    sqlget: {
+      desc: 'Runs a sql query against the database.',
+      usage: 'sqlget [query]',
+      config: {
+        ownerOnly: true
+      },
+      async execute (client, msg, param, db) {
+        try {
+          let rows = db.prepare(param.slice(1).join(' ')).all()
+          msg.channel.send(`\`\`\`\`${JSON.stringify(rows, null, 2)}\`\`\``)
+        } catch (err) {
+          console.log(err)
+          msg.channel.send('Something went wrong!')
+        }
+      }
+    },
+
     commands: {
       desc: 'Displays all commands and modules available',
       async execute (client, msg, param, db) {
