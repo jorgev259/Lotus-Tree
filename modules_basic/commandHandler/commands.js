@@ -1,5 +1,5 @@
 var util = require('../../utilities.js')
-const config = require('../../data/config.js')
+const { defaultConfig } = require('../../data/config.json')
 const { MessageEmbed } = require('discord.js')
 
 module.exports = {
@@ -23,11 +23,11 @@ module.exports = {
 
   commands: {
     config: {
-      usage: `config [${Object.keys(config.default).join('/')}] [value]`,
+      usage: `config [${Object.keys(defaultConfig).join('/')}] [value]`,
       desc: 'Changes a bot configuration.',
       async execute (client, msg, param, db) {
         const option = param[1].toLowerCase()
-        if (!Object.keys(config.default).includes(option)) return msg.channel.send(`'${option}' is not a valid option. Options: ${Object.keys(config.default).join(', ')}`)
+        if (!Object.keys(defaultConfig).includes(option)) return msg.channel.send(`'${option}' is not a valid option. Options: ${Object.keys(defaultConfig).join(', ')}`)
         const data = param.slice(2).join(' ')
 
         db.prepare('UPDATE config SET value = ? WHERE guild = ? AND type=?').run(data, msg.guild.id, option)

@@ -1,5 +1,5 @@
 var util = require('../../utilities.js')
-const config = require('../../data/config.js')
+const { defaultConfig } = require('../../data/config.json')
 
 module.exports = {
   events: {
@@ -7,7 +7,7 @@ module.exports = {
       client.guilds.forEach(guild => {
         checkGuild(client, db, guild)
       })
-      client.user.setActivity(`${config.default.prefix}help`, { type: 'PLAYING' })
+      client.user.setActivity(`${defaultConfig.prefix}help`, { type: 'PLAYING' })
     },
     guildCreate (client, db, guild) {
       checkGuild(client, db, guild)
@@ -28,7 +28,7 @@ module.exports = {
         const commandName = param[0].toLowerCase()
 
         if (!client.commands.has(commandName)) return
-        let command = client.commands.get(commandName)
+        const command = client.commands.get(commandName)
 
         if (await util.permCheck(message, command.module, commandName, client, db)) {
           client.commands.get(commandName).execute(client, message, param, db, command.module)
@@ -46,10 +46,10 @@ function checkGuild (client, db, guild) {
     db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, state ? '1' : '0')
   })
 
-  for (let commandName of client.commands.keys()) {
-    let command = client.commands.get(commandName)
+  for (const commandName of client.commands.keys()) {
+    const command = client.commands.get(commandName)
     if (command.module) db.prepare('INSERT OR IGNORE INTO commands (guild,command,state,module) VALUES (?,?,true,?)').run(guild.id, commandName, command.module)
   }
 
-  Object.keys(config.default).forEach(key => db.prepare('INSERT OR IGNORE INTO config (guild,type,value) VALUES (?,?,?)').run(guild.id, key, config.default[key]))
+  Object.keys(defaultConfig).forEach(key => db.prepare('INSERT OR IGNORE INTO config (guild,type,value) VALUES (?,?,?)').run(guild.id, key, defaultConfig[key]))
 }
