@@ -60,7 +60,8 @@
               const moduleName = file.path.split('modules/')[1].split('/')[0]
               promises.push(fs.copySync(file.original, `data/${moduleName}_dependencies.json`))
             } else if (file.path.endsWith('.json')) {
-              promises.push(fs.copySync(file.original, file.path.replace('modules/', 'data/')))
+              const newPath = file.path.replace('modules/', 'data/')
+              if (!fs.pathExistsSync(newPath)) promises.push(fs.copySync(file.original, newPath))
             } else {
               promises.push(fs.copySync(file.original, file.path.replace('modules/', 'modules_new/')))
             }
@@ -97,7 +98,8 @@
               promises2.push(fs.copySync(file, `data/lotus_dependencies/${moduleName}.json`))
             } else if (file.endsWith('config.json')) {
               const moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
-              promises2.push(fs.copySync(file, `data/lotus_config/${moduleName}.json`))
+              const newPath = `data/lotus_config/${moduleName}.json`
+              if (!fs.pathExistsSync(newPath)) promises2.push(fs.copySync(file, newPath))
             } else if (file.endsWith('.json')) {
               const newPath = file.replace(`repos/${moduleObject.name}/modules/`, 'data/')
               if (!fs.existsSync(newPath)) promises2.push(fs.copySync(file, newPath))
