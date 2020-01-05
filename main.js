@@ -94,10 +94,13 @@
           fileList.forEach(file => {
             if (file.endsWith('dependencies.json')) {
               const moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
-              promises2.push(fs.copySync(file, `data/${moduleName}_dependencies.json`))
+              promises2.push(fs.copySync(file, `data/lotus_dependencies/${moduleName}.json`))
+            } else if (file.endsWith('config.json')) {
+              const moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
+              promises2.push(fs.copySync(file, `data/lotus_config/${moduleName}.json`))
             } else if (file.endsWith('.json')) {
               const newPath = file.replace(`repos/${moduleObject.name}/modules/`, 'data/')
-              if(!fs.existsSync(newPath)) promises2.push(fs.copySync(file, newPath))
+              if (!fs.existsSync(newPath)) promises2.push(fs.copySync(file, newPath))
             } else {
               promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'modules_new/')))
             }

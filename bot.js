@@ -5,39 +5,39 @@ client.data = {}
 
 var argv = require('minimist')(process.argv.slice(2))
 const glob = require('glob')
-let firstData = glob.sync(`data/*`)
+const firstData = glob.sync('data/*')
 
 const Sqlite = require('better-sqlite3')
-let db = new Sqlite('data/database.db')
+const db = new Sqlite('data/database.db')
 
 var util = require('./utilities.js')
 
 loadData(client, firstData)
 
 module.exports = async function () {
-  let dataFiles = glob.sync(`data/**`)
+  const dataFiles = glob.sync('data/**')
 
-  let modules = glob.sync(`modules/*/`)
+  const modules = glob.sync('modules/*/')
 
   client.data = {}
   client.data.modules = []
   client.data.moduleConfig = {}
 
-  let eventModules = {}
+  const eventModules = {}
   let error = true
   for (const moduleFolder of modules) {
-    let files = glob.sync(`${moduleFolder}/*`)
+    const files = glob.sync(`${moduleFolder}/*`)
 
-    let outModule = { commands: {}, events: {} }
-    let moduleName = moduleFolder.split('/')[1]
+    const outModule = { commands: {}, events: {} }
+    const moduleName = moduleFolder.split('/')[1]
 
     try {
       for (const file of files) {
-        let pathArray = file.split('/')
-        let type = pathArray[pathArray.length - 1].split('.js')[0]
+        const pathArray = file.split('/')
+        const type = pathArray[pathArray.length - 1].split('.js')[0]
         if (type !== 'commands' && type !== 'events' && type !== 'config') continue
 
-        let jsObject = require(`./${file}`)
+        const jsObject = require(`./${file}`)
         if (jsObject.reqs) {
           await jsObject.reqs(client, db, moduleName)
         }
@@ -46,14 +46,14 @@ module.exports = async function () {
         if (jsObject.config) outModule.config = jsObject.config
       }
 
-      let commandKeys = outModule.commands ? Object.keys(outModule.commands) : []
-      let eventKeys = outModule.events ? Object.keys(outModule.events) : []
+      const commandKeys = outModule.commands ? Object.keys(outModule.commands) : []
+      const eventKeys = outModule.events ? Object.keys(outModule.events) : []
 
       commandKeys.forEach(commandName => {
         client.commands.set(commandName, outModule.commands[commandName])
         client.commands.get(commandName).module = moduleName
 
-        let command = outModule.commands[commandName]
+        const command = outModule.commands[commandName]
         if (command.alias) {
           command.alias.forEach(alias => {
             client.commands.set(alias, outModule.commands[commandName])
@@ -111,10 +111,10 @@ function loadData (client, dataFiles) {
     if (!file.endsWith('.json')) continue
     const data = require(`./${file}`)
 
-    let pathArray = file.split('/')
-    let name = pathArray[pathArray.length - 1].split('.json')[0]
+    const pathArray = file.split('/')
+    const name = pathArray[pathArray.length - 1].split('.json')[0]
     if (pathArray.length > 2) {
-      let roots = pathArray.slice(1)
+      const roots = pathArray.slice(1)
       roots.pop()
       roots.push(name)
       client.data[roots.join('.')] = data
