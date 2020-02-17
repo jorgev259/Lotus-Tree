@@ -239,7 +239,7 @@ module.exports = {
                   message.mentions.channels.cache.first().name
                 )
             } else {
-              if (!message.guild.roles.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
+              if (!message.guild.roles.cache.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
               db.prepare('INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)').run(message.guild.id, name, 'role', param.join(' '))
             }
             message.reply(param.join(' ') + ' is now allowed to use ' + name)

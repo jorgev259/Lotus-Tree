@@ -45,7 +45,7 @@ module.exports = {
           if (extra) return infoOut
           else return true
         }
-        if (perms.role.length > 0 && message.member.roles.some(r => perms.role.includes(r.name))) {
+        if (perms.role.length > 0 && message.member.roles.cache.some(r => perms.role.includes(r.name))) {
           if (extra) return infoOut
           else return true
         }
