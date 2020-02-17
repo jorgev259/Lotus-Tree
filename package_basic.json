@@ -21,6 +21,6 @@
         "pm2": "^3.2.2",
         "minimist": "^1.2.0",
         "debug": "^4.1.1",
-        "merge-objects": "^1.0.5",
+        "merge-objects": "^1.0.5"
     }
 }
