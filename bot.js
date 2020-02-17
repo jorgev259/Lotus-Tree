@@ -1,4 +1,5 @@
 const { Client, Collection } = require('discord.js')
+var merge = require('merge-objects')
 const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
 client.commands = new Collection()
 client.data = {}
@@ -15,13 +16,9 @@ var util = require('./utilities.js')
 loadData(client, firstData)
 
 module.exports = async function () {
-  const dataFiles = glob.sync('data/**')
-
   const modules = glob.sync('modules/*/')
 
-  client.data = {}
-  client.data.modules = []
-  client.data.moduleConfig = {}
+  client.data = { modules: [], moduleConfig: {} }
 
   const eventModules = {}
   let error = true
@@ -35,15 +32,16 @@ module.exports = async function () {
       for (const file of files) {
         const pathArray = file.split('/')
         const type = pathArray[pathArray.length - 1].split('.js')[0]
-        if (type !== 'commands' && type !== 'events' && type !== 'config') continue
+        if (type !== 'commands' && type !== 'events') continue
 
         const jsObject = require(`./${file}`)
         if (jsObject.reqs) {
           await jsObject.reqs(client, db, moduleName)
         }
 
+        if (jsObject.config) client.data.moduleConfig[moduleName] = jsObject.config
+
         outModule[type] = jsObject[type]
-        if (jsObject.config) outModule.config = jsObject.config
       }
 
       const commandKeys = outModule.commands ? Object.keys(outModule.commands) : []
@@ -70,9 +68,6 @@ module.exports = async function () {
 
       console.log(`Loaded module ${moduleName} with ${commandKeys.length} commands and ${eventKeys.length} events`)
 
-      if (outModule.config) client.data.moduleConfig[moduleName] = outModule.config
-      else client.data.moduleConfig[moduleName] = {}
-
       error = false
     } catch (e) {
       if (error) console.log(`Failed to load ${moduleName}\n${e.stack}\n`)
@@ -83,7 +78,7 @@ module.exports = async function () {
     }
   }
 
-  loadData(client, dataFiles)
+  loadData(client)
 
   Object.keys(eventModules).forEach(eventName => {
     client.on(eventName, (...args) => {
@@ -97,7 +92,7 @@ module.exports = async function () {
     if (err.message !== 'Unknown User') util.log(client, err.stack)
   })
 
-  client.login(client.data.tokens.discord)
+  client.login(client.data.lotus.tokens.discord).then(() => console.log('Logged in!'))
 
   if (argv.d) {
     client.on('debug', function (info) {
@@ -106,20 +101,27 @@ module.exports = async function () {
   }
 }
 
-function loadData (client, dataFiles) {
+function loadData (client) {
+  const dataFiles = glob.sync('data/**', { nodir: true })
   for (const file of dataFiles) {
     if (!file.endsWith('.json')) continue
     const data = require(`./${file}`)
 
     const pathArray = file.split('/')
-    const name = pathArray[pathArray.length - 1].split('.json')[0]
-    if (pathArray.length > 2) {
-      const roots = pathArray.slice(1)
-      roots.pop()
-      roots.push(name)
-      client.data[roots.join('.')] = data
-    } else {
-      client.data[name] = data
-    }
+    merge(client, getDeep(data, pathArray))
   }
+}
+
+function getDeep (data, splitArray) {
+  const result = {}
+  let name = splitArray.shift()
+
+  if (splitArray.length === 0) {
+    name = name.replace('.json', '')
+    if (!name.endsWith('.example')) result[name] = data
+  } else {
+    result[name] = getDeep(data, splitArray)
+  }
+
+  return result
 }

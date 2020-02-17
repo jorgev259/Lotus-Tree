@@ -1,5 +1,5 @@
 var util = require('../../utilities.js')
-const { defaultConfig } = require('../../data/config.json')
+const { defaultConfig } = require('../../data/lotus/config.json')
 const { MessageEmbed } = require('discord.js')
 
 module.exports = {
@@ -227,7 +227,7 @@ module.exports = {
                   'user',
                   message.mentions.users.first().id
                 )
-            } else if (message.mentions.channels.size > 0) {
+            } else if (message.mentions.channels.cache.size > 0) {
               await db
                 .prepare(
                   'INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)'
@@ -236,7 +236,7 @@ module.exports = {
                   message.guild.id,
                   name,
                   'channel',
-                  message.mentions.channels.first().name
+                  message.mentions.channels.cache.first().name
                 )
             } else {
               if (!message.guild.roles.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
@@ -252,7 +252,7 @@ module.exports = {
                   "DELETE FROM perms WHERE guild=? AND command=? AND type='user' AND item=?"
                 )
                 .run(message.guild.id, name, message.mentions.users.first().id)
-            } else if (message.mentions.channels.size > 0) {
+            } else if (message.mentions.channels.cache.size > 0) {
               await db
                 .prepare(
                   "DELETE FROM perms WHERE guild=? AND command=? AND type='channel' AND item=?"
@@ -260,7 +260,7 @@ module.exports = {
                 .run(
                   message.guild.id,
                   name,
-                  message.mentions.channels.first().name
+                  message.mentions.channels.cache.first().name
                 )
             } else {
               await db

@@ -1,6 +1,6 @@
 
 const Discord = require('discord.js')
-const { ownerGuild, owners } = require('./data/config.json')
+const { ownerGuild, owners } = require('./data/lotus/config.json')
 
 var fs = require('fs-extra')
 
@@ -75,8 +75,8 @@ module.exports = {
 
   log: function (client, log) {
     console.log(log)
-    if (client != null && client.channels.size > 0 && client.readyAt != null) {
-      client.guilds.get(ownerGuild).channels.find(c => c.name === 'error-logs').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
+    if (client != null && client.channels.cache.size > 0 && client.readyAt != null) {
+      client.guilds.cache.get(ownerGuild).channels.cache.find(c => c.name === 'error-logs').send({ embed: new Discord.MessageEmbed().setTimestamp().setDescription(log) })
     }
   }
 }

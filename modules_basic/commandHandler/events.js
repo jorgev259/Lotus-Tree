@@ -1,10 +1,10 @@
 var util = require('../../utilities.js')
-const { defaultConfig } = require('../../data/config.json')
+const { defaultConfig } = require('../../data/lotus/config.json')
 
 module.exports = {
   events: {
     ready (client, db, module) {
-      client.guilds.forEach(guild => {
+      client.guilds.cache.forEach(guild => {
         checkGuild(client, db, guild)
       })
       client.user.setActivity(`${defaultConfig.prefix}help`, { type: 'PLAYING' })
