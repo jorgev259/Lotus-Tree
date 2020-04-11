@@ -11,76 +11,22 @@ if (!fs.existsSync('./node_modules')) {
 }
 
 const gitModule = require('git-promise')
-
+const path = require('path')
 fs = require('fs-extra')
 const glob = require('glob')
 
-const modulesObjectList = require('./data/lotus/modules.json')
-const startBot = require('./bot.js')
+fs.ensureDirSync('config')
+fs.ensureDirSync('repos')
+fs.ensureDirSync('lotus/deps')
+
+const notFound = ['lotus/modules.json', 'lotus/tokens.json', 'lotus/config.json'].filter(e => !fs.pathExistsSync(e))
+if (notFound.length) {
+  notFound.forEach(e => fs.copyFileSync(e.replace('.json', '.example.json'), e))
+  console.log('Configuration files inside "lotus" not found. Modify them and restart the app')
+  process.exit(0)
+}
 
 startInstall()
-
-const handleFiles = {
-  local: moduleObject => {
-    return new Promise((resolve, reject) => {
-      const files = glob.sync(`${moduleObject.path}**`, { nodir: true })
-        .map(e => { return { original: e, path: e.replace(moduleObject.path, '') } })
-        .filter(e => moduleObject.modules === true || moduleObject.modules.includes(e.path.split('/')[1]))
-
-      const promises = []
-      files.forEach(file => {
-        if (file.path.endsWith('dependencies.json')) {
-          const moduleName = file.path.split('modules/')[1].split('/')[0]
-          promises.push(fs.copySync(file.original, `lotus/dependencies/${moduleName}.json`))
-        } else if (file.path.endsWith('.json')) {
-          const newPath = file.path.replace('modules/', 'data/')
-          if (!fs.pathExistsSync(newPath)) promises.push(fs.copySync(file.original, newPath))
-        } else {
-          promises.push(fs.copySync(file.original, file.path.replace('modules/', 'modules_new/')))
-        }
-      })
-
-      resolve()
-    })
-  },
-  git: async moduleObject => {
-    const repoExists = await fs.pathExists(`./repos/${moduleObject.name}/.git`)
-    if (!repoExists) {
-      await git(`clone ${moduleObject.url} ${moduleObject.name}`)
-    } else {
-      const remote = (await git('ls-remote', moduleObject.name)).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
-      const local = (await git('rev-parse HEAD', moduleObject.name)).split('\n')[0]
-
-      if (remote !== local) {
-        console.log(`Updating repository ${moduleObject.name}`)
-        await git('git pull', moduleObject.name)
-        console.log(`Updated repository ${moduleObject.name}`)
-      } else {
-        console.log(`${moduleObject.name} is up to date.`)
-      }
-    }
-
-    const promises2 = []
-    const fileList = glob.sync(`repos/${moduleObject.name}/**`, { nodir: true })
-      .filter(e => !moduleObject.modules || moduleObject.modules.includes(e.split('/')[3]))
-
-    fileList.forEach(file => {
-      if (file.endsWith('dependencies.json')) {
-        const moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
-        promises2.push(fs.copySync(file, `lotus/dependencies/${moduleName}.json`))
-      } else if (file.endsWith('config.json')) {
-        const moduleName = file.split(`repos/${moduleObject.name}/modules/`)[1].split('/')[0]
-        const newPath = `data/config/${moduleName}.json`
-        if (!fs.pathExistsSync(newPath)) promises2.push(fs.copySync(file, newPath))
-      } else if (file.endsWith('.json')) {
-        const newPath = file.replace(`repos/${moduleObject.name}/modules/`, 'data/')
-        if (!fs.existsSync(newPath)) promises2.push(fs.copySync(file, newPath))
-      } else {
-        promises2.push(fs.copySync(file, file.replace(`repos/${moduleObject.name}/modules/`, 'modules_new/')))
-      }
-    })
-  }
-}
 
 async function startInstall () {
   const remoteLotus = (await gitModule('ls-remote')).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
@@ -101,19 +47,13 @@ async function startInstall () {
 
   console.log('LotusTree is up to date.')
 
-  fs.removeSync('./modules')
-  fs.mkdirSync('./modules')
-  fs.removeSync('./modules_new')
-  fs.mkdirSync('./modules_new')
+  const repoConfig = require('./lotus/modules.json')
+  const repoPromises = repoConfig.map(repo => handleFiles[repo.type](repo))
+  await Promise.all(repoPromises)
 
-  await Promise.all(modulesObjectList.map(moduleObject => handleFiles[moduleObject.type](moduleObject)))
-
-  fs.copySync('modules_new', 'modules')
-  fs.removeSync('modules_new')
-  fs.copySync('modules_basic', 'modules')
   const packageJSON = require('./package.json')
 
-  const fileList = glob.sync('lotus/dependencies/**.json', { nodir: true })
+  const fileList = glob.sync('lotus/deps/**.json', { nodir: true })
   let change = false
   fileList.forEach(file => {
     const deps = require(`./${file}`)
@@ -131,7 +71,7 @@ async function startInstall () {
     process.exit(0)
   }
 
-  startBot()
+  require('./bot.js')()
 }
 
 function git (command, repo = '') {
@@ -143,4 +83,51 @@ function git (command, repo = '') {
       reject(err)
     })
   })
+}
+
+const handleFiles = {
+  local: repo => {
+    return copyConfig(repo)
+  },
+  git: async repo => {
+    const repoExists = await fs.pathExists(`./repos/${repo.name}/.git`)
+    if (!repoExists) {
+      await git(`clone ${repo.url} ${repo.name}`)
+      console.log(`Added repository ${repo.name}`)
+    } else {
+      const remote = (await git('ls-remote', repo.name)).split('\n').filter(e => !e.startsWith('From'))[0].split('\t')[0]
+      const local = (await git('rev-parse HEAD', repo.name)).split('\n')[0]
+
+      if (remote !== local) {
+        console.log(`Updating repository ${repo.name}`)
+        await git('git pull', repo.name)
+        console.log(`Updated repository ${repo.name}`)
+      } else {
+        console.log(`${repo.name} is up to date`)
+      }
+    }
+
+    repo.path = path.join('repos', repo.name)
+    return copyConfig(repo)
+  }
+}
+
+function copyConfig (repo) {
+  const dependencies = checkRepo(repo, glob.sync(path.join(repo.path, '/**/dependencies.json')))
+  const config = checkRepo(repo, glob.sync(path.join(repo.path, '/**/**.json'))).filter(e => !dependencies.includes(e))
+
+  const promises = []
+  promises.push(...dependencies.map(e => fs.copy(path.join(repo.path, e), path.join('lotus/deps/', `${e.split(path.sep)[0]}.json`))))
+  config.forEach(e => {
+    const file = path.join('config', e)
+    fs.ensureDirSync(path.dirname(file))
+    if (!fs.existsSync(file)) {
+      promises.push(fs.copy(path.join(repo.path, e), file))
+    }
+  })
+  return Promise.all(promises)
+}
+
+function checkRepo (repo, list) {
+  return list.map(e => path.relative(repo.path, e).split(path.sep)).filter(e => repo.modules.includes(e[0])).map(e => e.join(path.sep))
 }

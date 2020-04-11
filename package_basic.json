@@ -10,10 +10,10 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "import-cwd": "^3.0.0",
         "git-promise": "^0.3.1",
         "better-sqlite3": "^5.0.1",
-        "bufferutil": "^3.0.4",
-        "discord.js": "github:discordjs/discord.js",
+        "discord.js": "^12.1.1",
         "express": "^4.16.3",
         "fs-extra": "^7.0.1",
         "glob": "^7.1.2",

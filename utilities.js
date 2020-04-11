@@ -1,6 +1,6 @@
 
 const Discord = require('discord.js')
-const { ownerGuild, owners } = require('./data/lotus/config.json')
+const { ownerGuild, owners } = require('./lotus/config.json')
 
 var fs = require('fs-extra')
 
@@ -62,15 +62,15 @@ module.exports = {
   },
 
   async checkData (client, name, info) {
-    if (!(await fs.pathExists(`data/${name}.json`))) {
+    if (!(await fs.pathExists(`config/${name}.json`))) {
       // file does not exist
       client.data[name] = info
-      fs.writeFileSync(`data/${name}.json`, JSON.stringify(client.data[name], null, 4))
+      fs.writeFileSync(`config/${name}.json`, JSON.stringify(client.data[name], null, 4))
     }
   },
 
   async save (data, name) {
-    await fs.writeFile('data/' + name + '.json', JSON.stringify(data, null, 4))
+    await fs.writeFile('config/' + name + '.json', JSON.stringify(data, null, 4))
   },
 
   log: function (client, log) {

@@ -1,12 +1,11 @@
-/package.json
-/package-lock.json
-/node_modules
-/modules
-/modules_old
-/lotus
-/temp
+node_modules
+package.json
+package-lock.json
+yarn.lock
 
-/data/*
-!/data/*/
-/data/*/*
-!/data/lotus/**.example.json
+lotus/**/*.json
+lotus/database.db
+!lotus/**/*.example.json
+
+config
+repos

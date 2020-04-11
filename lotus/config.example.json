@@ -1,0 +1,10 @@
+{
+    "owners":[
+        "bot owner id",
+        "bot owner #2 id"
+    ],
+    "defaultConfig":{
+      "prefix": ">"
+    },
+    "ownerGuild": "main server id"
+}
