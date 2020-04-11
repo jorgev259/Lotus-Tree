@@ -13,86 +13,20 @@ const glob = require('glob')
 const Sqlite = require('better-sqlite3')
 const db = new Sqlite('lotus/database.db')
 
-db.prepare(
-  'CREATE TABLE IF NOT EXISTS config (guild TEXT, type TEXT, value TEXT, PRIMARY KEY(`guild`,`type`))'
-).run()
-db.prepare(
-  'CREATE TABLE IF NOT EXISTS modules (guild TEXT, module TEXT, state TEXT, PRIMARY KEY(`guild`,`module`))'
-).run()
-db.prepare(
-  'CREATE TABLE IF NOT EXISTS commands (guild TEXT, command TEXT, module TEXT, state TEXT, PRIMARY KEY(`guild`,`command`))'
-).run()
-db.prepare(
-  'CREATE TABLE IF NOT EXISTS perms (guild TEXT, command TEXT, type TEXT, perm TEXT)'
-).run()
-
 var util = require('./utilities.js')
 const tokens = require('./lotus/tokens.json')
 const repos = require('./lotus/modules.json')
 
 loadConfig(client)
 
+const eventModules = {}
+
 module.exports = async function () {
-  const eventModules = {}
-  const commandHandlerCommands = require('./commandHandler/commands')
-  const commandHandlerEvents = require('./commandHandler/events')
-  Object.keys(commandHandlerCommands).forEach(commandName => {
-    const command = commandHandlerCommands[commandName]
-    client.commands.set(commandName, command)
-    client.commands.get(commandName).module = 'commandHandler'
-
-    if (command.alias) {
-      command.alias.forEach(alias => {
-        client.commands.set(alias, command)
-      })
-    }
-  })
-  Object.keys(commandHandlerEvents).forEach(eventName => {
-    if (!eventModules[eventName]) eventModules[eventName] = []
-    eventModules[eventName].push({ func: commandHandlerEvents[eventName], module: 'commandHandler' })
-  })
-
-  client.config.modules.push('commandHandler')
+  loadModule('./', 'commandHandler', 'commandHandler')
 
   repos.forEach(repo => {
     repo.modules.forEach(moduleName => {
-      try {
-        let commands; let requirements; let events
-        const message = []
-
-        if (fs.existsSync(path.join(repo.path, moduleName, 'commands.js'))) commands = require(path.join(repo.path, moduleName, 'commands.js'))
-        if (fs.existsSync(path.join(repo.path, moduleName, 'events.js'))) events = require(path.join(repo.path, moduleName, 'events.js'))
-        if (fs.existsSync(path.join(repo.path, moduleName, 'requirements.js'))) requirements = require(path.join(repo.path, moduleName, 'requirements.js'))
-
-        if (requirements) requirements(client, db)
-        if (commands) {
-          Object.keys(commands).forEach(commandName => {
-            const command = commands[commandName]
-            client.commands.set(commandName, command)
-            client.commands.get(commandName).module = moduleName
-
-            if (command.alias) {
-              command.alias.forEach(alias => {
-                client.commands.set(alias, command)
-              })
-            }
-          })
-          message.push(`${Object.keys(commands).length} commands`)
-        }
-        if (events) {
-          Object.keys(events).forEach(eventName => {
-            if (!eventModules[eventName]) eventModules[eventName] = []
-            eventModules[eventName].push({ func: events[eventName], module: moduleName })
-          })
-          message.push(`${Object.keys(events).length} events`)
-        }
-
-        client.config.modules.push(moduleName)
-
-        console.log(`Loaded module ${moduleName} with ${message.join(' and ')}`)
-      } catch (e) {
-        console.log(`\nFailed to load ${moduleName}\n${e.stack}\n`)
-      }
+      loadModule(repo.path, moduleName, eventModules)
     })
   })
 
@@ -140,4 +74,44 @@ function getDeep (config, splitArray) {
   }
 
   return result
+}
+
+function loadModule (repoPath, moduleName) {
+  try {
+    let commands; let requirements; let events
+    const message = []
+
+    if (fs.existsSync(path.join(repoPath, moduleName, 'commands.js'))) commands = require(path.join(process.cwd(), repoPath, moduleName, 'commands.js'))
+    if (fs.existsSync(path.join(repoPath, moduleName, 'events.js'))) events = require(path.join(process.cwd(), repoPath, moduleName, 'events.js'))
+    if (fs.existsSync(path.join(repoPath, moduleName, 'requirements.js'))) requirements = require(path.join(process.cwd(), repoPath, moduleName, 'requirements.js'))
+
+    if (requirements) requirements(client, db)
+    if (commands) {
+      Object.keys(commands).forEach(commandName => {
+        const command = commands[commandName]
+        client.commands.set(commandName, command)
+        client.commands.get(commandName).module = moduleName
+
+        if (command.alias) {
+          command.alias.forEach(alias => {
+            client.commands.set(alias, command)
+          })
+        }
+      })
+      message.push(`${Object.keys(commands).length} commands`)
+    }
+    if (events) {
+      Object.keys(events).forEach(eventName => {
+        if (!eventModules[eventName]) eventModules[eventName] = []
+        eventModules[eventName].push({ func: events[eventName], module: moduleName })
+      })
+      message.push(`${Object.keys(events).length} events`)
+    }
+
+    client.config.modules.push(moduleName)
+
+    console.log(`Loaded module ${moduleName} with ${message.join(' and ')}`)
+  } catch (e) {
+    console.log(`\nFailed to load ${moduleName}\n${e.stack}\n`)
+  }
 }
