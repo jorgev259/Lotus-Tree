@@ -38,7 +38,7 @@ module.exports = {
 
 function checkGuild (client, db, guild) {
   client.config.modules.forEach(moduleName => {
-    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, '1')
+    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, moduleName === 'commandHandler' ? '1' : '0')
   })
 
   for (const commandName of client.commands.keys()) {

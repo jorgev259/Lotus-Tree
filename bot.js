@@ -20,6 +20,7 @@ const repos = require('./lotus/modules.json')
 loadConfig(client)
 
 const eventModules = {}
+global.requireFn = require('import-cwd')
 
 module.exports = async function () {
   loadModule('./', 'commandHandler', 'commandHandler')

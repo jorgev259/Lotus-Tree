@@ -1,7 +1,7 @@
 [
     {
-        "owner":"owner",
-        "repo":"repo Name",
+        "url":"git url",
+        "name":"name",
         "type":"git"
     },
     {
