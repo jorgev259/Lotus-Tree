@@ -10,8 +10,18 @@ const path = require('path')
 const fs = require('fs-extra')
 const glob = require('glob')
 
-const Sqlite = require('better-sqlite3')
-const db = new Sqlite('lotus/database.db')
+// const Sqlite = require('better-sqlite3')
+// const db = new Sqlite('lotus/database.db')
+
+const Sequelize = require('sequelize')
+
+const cls = require('cls-hooked')
+const namespace = cls.createNamespace('trans-namespace')
+
+Sequelize.useCLS(namespace)
+
+const config = require('./lotus/db.json')
+const sequelize = new Sequelize(config)
 
 var util = require('./utilities.js')
 const tokens = require('./lotus/tokens.json')
@@ -25,16 +35,18 @@ global.requireFn = require('import-cwd')
 module.exports = async function () {
   loadModule('./', 'commandHandler', 'commandHandler')
 
-  repos.forEach(repo => {
-    repo.modules.forEach(moduleName => {
+  repos.forEach(repo =>
+    repo.modules.forEach(moduleName =>
       loadModule(repo.path, moduleName, eventModules)
-    })
-  })
+    )
+  )
+
+  await sequelize.sync()
 
   Object.keys(eventModules).forEach(eventName => {
     client.on(eventName, (...args) => {
       eventModules[eventName].forEach(item => {
-        item.func(client, db, item.module, ...args)
+        item.func(client, sequelize, item.module, ...args)
       })
     })
   })
@@ -86,7 +98,7 @@ function loadModule (repoPath, moduleName) {
     if (fs.existsSync(path.join(repoPath, moduleName, 'events.js'))) events = require(path.join(process.cwd(), repoPath, moduleName, 'events.js'))
     if (fs.existsSync(path.join(repoPath, moduleName, 'requirements.js'))) requirements = require(path.join(process.cwd(), repoPath, moduleName, 'requirements.js'))
 
-    if (requirements) requirements(client, db)
+    if (requirements) requirements(client, sequelize)
     if (commands) {
       Object.keys(commands).forEach(commandName => {
         const command = commands[commandName]

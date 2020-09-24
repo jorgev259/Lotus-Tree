@@ -5,10 +5,11 @@ const { ownerGuild, owners } = require('./lotus/config.json')
 var fs = require('fs-extra')
 
 module.exports = {
-  checkGuild (db, guild, moduleName) {
-    return db.prepare('SELECT state FROM modules WHERE guild=? AND module=?').get(guild.id, moduleName).state === '1'
+  async checkGuild (sequelize, guild, moduleName) {
+    const { value } = await sequelize.models.module.findOne({ where: { command: moduleName, guild: guild.id } })
+    return value
   },
-  async permCheck (message, moduleName, commandName, client, db, extra = false) {
+  async permCheck (message, moduleName, commandName, client, sequelize, extra = false) {
     const command = client.commands.get(commandName)
     if (command && command.config && command.config.ownerOnly) {
       if (owners) return owners.includes(message.author.id)
@@ -19,16 +20,20 @@ module.exports = {
         else return app.owner.id === message.author.id
       }
     } else {
-      if (moduleName && db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(moduleName, message.guild.id).state === '0') {
+      const { module, command: commandModel, perm } = sequelize.models
+      const { value: moduleValue } = await module.findOne({ where: { module: moduleName, guild: message.guild.id } })
+      const { value: commandValue } = await commandModel.findOne({ where: { command: commandName, guild: message.guild.id } })
+
+      if (moduleName && !moduleValue) {
         if (extra) return { allowed: false }
         else return false
       }
-      if (moduleName && db.prepare('SELECT state FROM commands WHERE command=? AND guild=?').get(commandName, message.guild.id).state === '0') {
+      if (moduleName && !commandValue) {
         if (extra) return { allowed: false }
         else return false
       }
 
-      const dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(commandName, message.guild.id)
+      const dbPerms = await perm.findAll({ where: { command: commandName, guild: message.guild.id } })
       if (dbPerms.length === 0) {
         if (extra) return { allowed: true }
         else return true

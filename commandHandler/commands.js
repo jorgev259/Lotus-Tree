@@ -7,13 +7,17 @@ module.exports = {
   config: {
     usage: `config [${Object.keys(defaultConfig).join('/')}] [value]`,
     desc: 'Changes a bot configuration.',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       const option = param[1].toLowerCase()
-      if (!Object.keys(defaultConfig).includes(option)) return msg.channel.send(`'${option}' is not a valid option. Options: ${Object.keys(defaultConfig).join(', ')}`)
+      const keys = Object.keys(defaultConfig)
+
+      if (!keys.includes(option)) return msg.channel.send(`'${option}' is not a valid option. Options: ${keys.join(', ')}`)
       const data = param.slice(2).join(' ')
 
-      db.prepare('UPDATE config SET value = ? WHERE guild = ? AND type=?').run(data, msg.guild.id, option)
-      // var channel = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(guild.id, 'twitter_channel').value
+      const row = await sequelize.models.config.findOne({ where: { guild: msg.guild.id, item: option } })
+      row.value = data
+      await row.save()
+
       msg.channel.send('Settings updated')
     }
   },
@@ -21,26 +25,32 @@ module.exports = {
   toggle: {
     usage: 'toggle [module/command] [name]',
     desc: 'Enables or disables a command/module.',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       if (!param[1] || !param[2]) return msg.channel.send('Usage: toggle [module/command] [name]')
       const mode = param[1].toLowerCase()
       if (!['module', 'command'].includes(mode)) return msg.channel.send(`${mode} is not a valid option`)
 
       const id = param[2].toLowerCase()
+      const { module, command } = sequelize.models
+
       switch (mode) {
-        case 'module':
-          db.prepare('UPDATE modules SET state = NOT state WHERE module=? AND guild=?').run(id, msg.guild.id)
-          msg.channel.send(`The module '${id}' has been ${db.prepare('SELECT state FROM modules WHERE module=? AND guild=?').get(id, msg.guild.id).state === '0' ? 'disabled' : 'enabled'}.`)
+        case 'module': {
+          const row = await module.findOne({ where: { module: id, guild: msg.guild.id } })
+          row.value = !row.value
+          await row.save()
+          msg.channel.send(`The module '${id}' has been ${row.value ? 'enabled' : 'disabled'}.`)
           break
+        }
 
         case 'command': {
-          const commands = db.prepare('SELECT command FROM commands').all().map(e => e.command)
-          if (!commands.includes(id)) return msg.channel.send(`${id} is not a valid command name.\nCommands: ${commands.join(', ')}.`)
+          const row = await command.findOne({ where: { command: id, guild: msg.guild.id } })
+          if (!row) return msg.channel.send(`${id} is not a valid command name.`)
 
-          db.prepare('UPDATE commands SET state = NOT state WHERE command=? AND guild=?').run(id, msg.guild.id)
+          row.value = !row.value
+          await row.save()
 
-          const data = db.prepare('SELECT c.state as cState, m.state as mState, m.module as module FROM commands c, modules m WHERE c.command=? AND c.guild=? AND c.module = m.module').get(id, msg.guild.id)
-          msg.channel.send(`The module '${id}' has been ${data.cState === '0' ? 'disabled' : 'enabled'}.${data.mState === '0' && data.cState === '1' ? `\nEnable the module '${data.module}' to use this command.` : ''}`)
+          const { value } = await module.findOne({ where: { module: row.module, guild: msg.guild.id } })
+          msg.channel.send(`The module '${id}' has been ${row.value ? 'enabled' : 'disabled'}.${row.value && !value ? `\nEnable the module '${row.module}' to use this command.` : ''}`)
           break
         }
       }
@@ -49,8 +59,9 @@ module.exports = {
   help: {
     usage: 'help [command]',
     desc: 'This command displays information about a command.',
-    async execute (client, message, param, db) {
-      var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
+    async execute (client, message, param, sequelize) {
+      const { value: prefix } = await sequelize.models.config.findOne({ where: { guild: message.guild.id, item: 'prefix' } })
+
       if (param[1]) {
         const name = param[1].toLowerCase()
         if (
@@ -58,7 +69,7 @@ module.exports = {
             (client.commands.get(name).usage || client.commands.get(name).desc)
         ) {
           const command = client.commands.get(param[1].toLowerCase())
-          const permData = await util.permCheck(message, command.module, param[1].toLowerCase(), client, db, true)
+          const permData = await util.permCheck(message, command.module, param[1].toLowerCase(), client, sequelize, true)
           if (permData.allowed && command.desc) {
             message.channel.send(`${command.desc}${command.usage ? ` Usage: ${prefix}${command.usage}` : ''}${permData.channel ? ` (Usable on: ${permData.channel.map(e => `#${e}`).join(' ')})` : ''}`)
           }
@@ -66,7 +77,7 @@ module.exports = {
       } else {
         const fields = (await Promise.all(Array.from(client.commands.keys()).map(async idName => {
           const command = client.commands.get(idName)
-          const permData = await util.permCheck(message, command.module, idName, client, db, true)
+          const permData = await util.permCheck(message, command.module, idName, client, sequelize, true)
           if (permData.allowed && command.desc) {
             return {
               name: idName,
@@ -86,7 +97,7 @@ module.exports = {
     config: {
       ownerOnly: true
     },
-    async execute (client, msg, param, db) {
+    async execute (client, msg) {
       await msg.channel.send('Restarting...')
       await client.user.setActivity('Restarting...', { type: 'PLAYING' })
       process.exit()
@@ -98,7 +109,7 @@ module.exports = {
     config: {
       ownerOnly: true
     },
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param) {
       console.log(param.slice(1).join(' '))
       const result = eval(param.slice(1).join(' '))
       console.log(result)
@@ -112,27 +123,10 @@ module.exports = {
     config: {
       ownerOnly: true
     },
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       try {
-        db.exec(param.slice(1).join(' '))
-        msg.channel.send('Query finished')
-      } catch (err) {
-        console.log(err)
-        msg.channel.send('Something went wrong!')
-      }
-    }
-  },
-
-  sqlget: {
-    desc: 'Runs a sql query against the database.',
-    usage: 'sqlget [query]',
-    config: {
-      ownerOnly: true
-    },
-    async execute (client, msg, param, db) {
-      try {
-        const rows = db.prepare(param.slice(1).join(' ')).all()
-        msg.channel.send(`\`\`\`\`${JSON.stringify(rows, null, 2)}\`\`\``)
+        const [result] = await sequelize.query(param.slice(1).join(' '))
+        msg.channel.send(`\`\`\`${JSON.stringify(result, null, 2)}\`\`\``)
       } catch (err) {
         console.log(err)
         msg.channel.send('Something went wrong!')
@@ -142,13 +136,17 @@ module.exports = {
 
   commands: {
     desc: 'Displays all commands and modules available',
-    async execute (client, msg, param, db) {
-      const fields = db.prepare('SELECT module as name,state FROM modules WHERE guild=?').all(msg.guild.id).map(function (module) {
+    async execute (client, msg, param, sequelize) {
+      const { module, command } = sequelize.models
+
+      const modules = await module.findAll({ where: { guild: msg.guild.id } })
+      const fields = await Promise.all(modules.map(async ({ module, value }) => {
+        const commands = await command.findAll({ where: { module, guild: msg.guild.id } })
         return {
-          name: `${module.name}${module.state === '0' ? ' (disabled)' : ''}`,
-          value: db.prepare('SELECT command as name,state FROM commands WHERE guild=? AND module=?').all(msg.guild.id, module.name).map(command => `${command.name}${command.state === '0' ? ' (disabled)' : ''}`).join('\n') || '\u200B'
+          name: `${module}${value ? '' : ' (disabled)'}`,
+          value: commands.map(({ command, value }) => `${command}${value ? '' : ' (disabled)'}`).join('\n') || '\u200B'
         }
-      })
+      }))
 
       const embed = {
         title: 'Available Commands (per module)',
@@ -188,75 +186,56 @@ module.exports = {
   perms: {
     desc: 'Adds, removes or lists permissions to a command.',
     usage: 'perms [command] <add│remove|list> <#channel│@user│roleName>',
-    async execute (client, message, param, db) {
+    async execute (client, message, param, sequelize) {
       var name = param[1].toLowerCase()
       var type = param[2].toLowerCase()
       param = param.slice(3)
 
       if (!client.commands.has(name)) return message.channel.send(`\`${name}\` is not a valid command`)
 
+      const { perm } = sequelize.models
+
       switch (type) {
-        case 'add':
+        case 'add': {
+          const data = { guild: message.guild.id, command: name }
           if (message.mentions.users.size > 0) {
-            await db
-              .prepare(
-                'INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)'
-              )
-              .run(
-                message.guild.id,
-                name,
-                'user',
-                message.mentions.users.first().id
-              )
+            data.type = 'user'
+            data.perm = message.mentions.users.first().id
           } else if (message.mentions.channels.size > 0) {
-            await db
-              .prepare(
-                'INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)'
-              )
-              .run(
-                message.guild.id,
-                name,
-                'channel',
-                message.mentions.channels.first().name
-              )
+            data.type = 'channel'
+            data.perm = message.mentions.channels.first().name
           } else {
             if (!message.guild.roles.cache.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
-            db.prepare('INSERT INTO perms (guild,command,type,perm) VALUES (?,?,?,?)').run(message.guild.id, name, 'role', param.join(' '))
+            data.type = 'role'
+            data.perm = param.join(' ')
           }
+
+          await perm.create(data)
           message.reply(param.join(' ') + ' is now allowed to use ' + name)
           break
+        }
 
-        case 'remove':
+        case 'remove': {
+          const data = { guild: message.guild.id, command: name }
           if (message.mentions.users.size > 0) {
-            await db
-              .prepare(
-                "DELETE FROM perms WHERE guild=? AND command=? AND type='user' AND item=?"
-              )
-              .run(message.guild.id, name, message.mentions.users.first().id)
+            data.type = 'user'
+            data.perm = message.mentions.users.first().id
           } else if (message.mentions.channels.size > 0) {
-            await db
-              .prepare(
-                "DELETE FROM perms WHERE guild=? AND command=? AND type='channel' AND item=?"
-              )
-              .run(
-                message.guild.id,
-                name,
-                message.mentions.channels.first().name
-              )
+            data.type = 'channel'
+            data.perm = message.mentions.channels.first().name
           } else {
-            await db
-              .prepare(
-                "DELETE FROM perms WHERE guild=? AND command=? AND type='role' AND item=?"
-              )
-              .run(message.guild.id, name, param.join(' '))
+            if (!message.guild.roles.cache.some(r => r.name === param.join(' '))) return message.channel.send(`The role \`${param.join(' ')}\` doesnt exist.`)
+            data.type = 'role'
+            data.perm = param.join(' ')
           }
-          message.reply(
-            'Removed ' + param.join(' ') + ' from the command ' + name
-          )
+
+          await perm.destroy({ where: data })
+          message.reply('Removed ' + param.join(' ') + ' from the command ' + name)
           break
+        }
 
         case 'list': {
-          const dbPerms = db.prepare('SELECT type,perm FROM perms WHERE command=? AND guild=?').all(name, message.guild.id)
+          const dbPerms = await perm.findAll({ where: { guild: message.guild.id, command: name } })
 
           const perms = {}
           dbPerms.forEach(element => {

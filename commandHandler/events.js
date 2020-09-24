@@ -2,18 +2,19 @@ var util = require('../utilities.js')
 const { defaultConfig } = require('../lotus/config.json')
 
 module.exports = {
-  ready (client, db, module) {
+  ready (client, sequelize, module) {
     client.guilds.cache.forEach(guild => {
-      checkGuild(client, db, guild)
+      checkGuild(client, sequelize, guild)
     })
     client.user.setActivity(`${defaultConfig.prefix}help`, { type: 'PLAYING' })
   },
-  guildCreate (client, db, guild) {
-    checkGuild(client, db, guild)
+  guildCreate (client, sequelize, guild) {
+    checkGuild(client, sequelize, guild)
   },
-  async message (client, db, moduleName, message) {
+  async message (client, sequelize, moduleName, message) {
     if (!message.member) return
-    var prefix = db.prepare('SELECT value FROM config WHERE guild=? AND type=?').get(message.guild.id, 'prefix').value
+
+    const { value: prefix } = await sequelize.models.config.findOne({ where: { guild: message.guild.id, item: 'prefix' } })
 
     if (message.content.startsWith(prefix) || message.content.startsWith('<@' + client.user.id + '>')) {
       var param = message.content.split(' ')
@@ -29,22 +30,24 @@ module.exports = {
       if (!client.commands.has(commandName)) return
       const command = client.commands.get(commandName)
 
-      if (await util.permCheck(message, command.module, commandName, client, db)) {
-        client.commands.get(commandName).execute(client, message, param, db, command.module)
+      if (await util.permCheck(message, command.module, commandName, client, sequelize)) {
+        client.commands.get(commandName).execute(client, message, param, sequelize, command.module)
       }
     }
   }
 }
 
-function checkGuild (client, db, guild) {
+function checkGuild (client, sequelize, guild) {
+  const { command, module, config } = sequelize.models
+
   client.config.modules.forEach(moduleName => {
-    db.prepare('INSERT OR IGNORE INTO modules (guild,module,state) VALUES (?,?,?)').run(guild.id, moduleName, moduleName === 'commandHandler' ? '1' : '0')
+    module.findOrCreate({ where: { guild: guild.id, module: moduleName }, defaults: { value: moduleName === 'commandHandler' } })
   })
 
   for (const commandName of client.commands.keys()) {
-    const command = client.commands.get(commandName)
-    if (command.module) db.prepare('INSERT OR IGNORE INTO commands (guild,command,state,module) VALUES (?,?,true,?)').run(guild.id, commandName, command.module)
+    const commandData = client.commands.get(commandName)
+    if (commandData.module) command.findOrCreate({ where: { guild: guild.id, command: commandName, module: commandData.module }, defaults: { value: true } })
   }
 
-  Object.keys(defaultConfig).forEach(key => db.prepare('INSERT OR IGNORE INTO config (guild,type,value) VALUES (?,?,?)').run(guild.id, key, defaultConfig[key]))
+  Object.keys(defaultConfig).forEach(key => config.findOrCreate({ where: { guild: guild.id, item: key }, defaults: { value: defaultConfig[key] } }))
 }
