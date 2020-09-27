@@ -10,6 +10,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "cls-hooked": "^4.2.2",
         "import-cwd": "^3.0.0",
         "git-promise": "^0.3.1",
         "better-sqlite3": "^5.0.1",
