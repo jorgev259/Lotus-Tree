@@ -1,11 +1,11 @@
 /* global require */
 const { Client, Collection } = require('discord.js')
-var merge = require('merge-objects')
-const client = new Client({ partials: ['MESSAGE', 'CHANNEL'] })
+const merge = require('merge-objects')
+const client = new Client({ partials: ['MESSAGE', 'REACTION'] })
 client.commands = new Collection()
 client.config = { modules: [] }
 
-var argv = require('minimist')(process.argv.slice(2))
+const argv = require('minimist')(process.argv.slice(2))
 const path = require('path')
 const fs = require('fs-extra')
 const glob = require('glob')
@@ -23,7 +23,7 @@ Sequelize.useCLS(namespace)
 const config = require('./lotus/db.json')
 const sequelize = new Sequelize(config)
 
-var util = require('./utilities.js')
+const util = require('./utilities.js')
 const tokens = require('./lotus/tokens.json')
 const repos = require('./lotus/modules.json')
 
