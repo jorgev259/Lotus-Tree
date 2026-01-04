@@ -1,4 +1,8 @@
 {
-    "watch": ["../Lotus-Tree-packages/**", "./src/**", "./config/**"],
-    "exec": "npm run start"
+    "watch": [
+        "../Lotus-Tree-packages/**",
+        "./src/**",
+        "./config/**"
+    ],
+    "exec": "yarn start"
 }

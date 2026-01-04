@@ -1,7 +1,8 @@
 import fs from 'fs-extra'
 import path from 'path'
+import { Sequelize } from 'sequelize'
 
-export async function loadModule (packagePath, sequelize) {
+export async function loadModule(packagePath: string, sequelize: Sequelize) {
   const { default: packageObj } = await import(packagePath)
   const { name } = packageObj
 
@@ -14,7 +15,9 @@ export async function loadModule (packagePath, sequelize) {
 
       if (!configExists) {
         await fs.writeJson(configPath, localConfig)
-        throw new Error(`${configPath} has been created. Edit the file then restart the bot`)
+        throw new Error(
+          `${configPath} has been created. Edit the file then restart the bot`
+        )
       } else {
         packageObj.localConfig = await fs.readJSON(configPath)
       }
@@ -24,15 +27,14 @@ export async function loadModule (packagePath, sequelize) {
     const commandSize = Object.values(commands).length
     const eventSize = Object.values(events).length
 
-    const loadedText = commandSize > 0 && eventSize > 0
-      ? ` with ${commandSize} commands and ${eventSize} events`
-      : (commandSize > 0
-        ? ` with ${commandSize} commands`
-        : (
-          eventSize > 0
+    const loadedText =
+      commandSize > 0 && eventSize > 0
+        ? ` with ${commandSize} commands and ${eventSize} events`
+        : commandSize > 0
+          ? ` with ${commandSize} commands`
+          : eventSize > 0
             ? ` with ${eventSize} events`
             : ''
-        ))
 
     console.log(`Loaded ${name}${loadedText}`)
     return packageObj

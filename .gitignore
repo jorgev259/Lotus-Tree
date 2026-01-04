@@ -1,6 +1,7 @@
+dist/
+node_modules/
+
 config/*.json
 !config/*.example.json
 
-lib
-node_modules
 package-lock.json
