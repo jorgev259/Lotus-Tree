@@ -31,7 +31,7 @@ export interface Globals {
   client: Client<boolean>
   commands: Map<any, any>
   defaultConfig: Config
-  config: {}
+  config: Config
   localConfig: LocalConfig
   modules: Map<any, any>
   lotusConfig: LotusConfig

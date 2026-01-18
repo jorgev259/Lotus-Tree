@@ -28,7 +28,7 @@ const intents = new Set<GatewayIntentBits>()
 const partials = new Set<Partials>()
 
 const defaultConfig: Config = { guild: {}, global: {} }
-const config = {}
+const config: Config = { guild: {}, global: {} }
 const localConfig = {} as LocalConfig
 
 const packages = (
