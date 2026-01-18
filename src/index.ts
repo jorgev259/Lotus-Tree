@@ -1,20 +1,17 @@
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js'
 import { type Options, Sequelize } from 'sequelize'
 
-export interface Config {
-  guild: Record<string, any>
-  global: Record<string, any>
-}
-
+export type Config = Record<'guild' | 'global', Record<string, any>>
 export type LocalConfig = Record<string, Record<string, any>>
 
 export type EventFunction = (globals: Globals, ...args: any[]) => void
+export type LotusEvents = Record<Events, EventFunction>
 
 export interface Package {
   name: string
   intents?: GatewayIntentBits[]
   partials?: Partials[]
-  events?: Record<Events, EventFunction>
+  events?: LotusEvents
   commands?: Record<string, any>
   config?: Config
   localConfig?: LocalConfig
