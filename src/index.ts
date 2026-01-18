@@ -5,7 +5,7 @@ export type Config = Record<'guild' | 'global', Record<string, any>>
 export type LocalConfig = Record<string, Record<string, any>>
 
 export type EventFunction = (globals: Globals, ...args: any[]) => void
-export type LotusEvents = Record<Events, EventFunction>
+export type LotusEvents = Partial<Record<Events, EventFunction>>
 
 export interface Package {
   name: string
