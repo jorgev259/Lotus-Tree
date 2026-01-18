@@ -4,10 +4,11 @@
     "@tsconfig/node-ts/tsconfig.json"
   ],
   "compilerOptions": {
-    "outDir": "./out" /* Redirect output structure to the directory. */,
-    "rootDirs": [
-      "src"
-    ] /* List of root folders whose combined content represents the structure of the project at runtime. */,
+    "baseUrl": "./",
+    "declaration": true,
+    "declarationDir": "./dist/types/",
+    "outDir": "./dist/lotus/",
+    "rootDir": "./src/",
     "resolveJsonModule": true
   }
 }

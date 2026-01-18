@@ -1,7 +1,7 @@
 dist/
 node_modules/
 
-config/*.json
-!config/*.example.json
+**/config/*.json
+!**/config/*.example.json
 
 package-lock.json

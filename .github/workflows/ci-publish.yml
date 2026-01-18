@@ -1,0 +1,30 @@
+name: Publish pipeline
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          cache: yarn
+          registry-url: 'https://registry.npmjs.org'
+      - name: 'Create .npmrc'
+        run: |
+          echo "registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+      - name: Prepare build-types
+        run: |
+          yarn -y 
+          yarn build
+          cp package-types.json dist/types/package.json
+          cd dist/types/
+          npm publish

@@ -1,9 +1,12 @@
 import fs from 'fs-extra'
 import path from 'path'
 import { Sequelize } from 'sequelize'
+import type { Package } from './index.ts'
 
 export async function loadModule(packagePath: string, sequelize: Sequelize) {
-  const { default: packageObj } = await import(packagePath)
+  const { default: packageObj } = (await import(packagePath)) as {
+    default: Package
+  }
   const { name } = packageObj
 
   try {
