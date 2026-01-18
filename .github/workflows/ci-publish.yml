@@ -18,12 +18,10 @@ jobs:
           node-version: latest
           cache: yarn
           registry-url: 'https://registry.npmjs.org'
-      - name: 'Create .npmrc'
-        run: |
-          echo "registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
       - name: Prepare build-types
         run: |
           yarn -y 
+          cp src/config/lotus.example.json src/config/lotus.json
           yarn build
           cp package-types.json dist/types/package.json
           cd dist/types/
