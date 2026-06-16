@@ -1,9 +1,10 @@
 import fs from 'fs-extra'
 import path from 'path'
-import { Sequelize } from 'sequelize'
+import type { EntityManager } from '@mikro-orm/core'
+
 import type { Package } from './index.ts'
 
-export async function loadModule(packagePath: string, sequelize: Sequelize) {
+export async function loadModule(packagePath: string, orm: EntityManager) {
   const { default: packageObj } = (await import(packagePath)) as {
     default: Package
   }
@@ -25,7 +26,7 @@ export async function loadModule(packagePath: string, sequelize: Sequelize) {
         packageObj.localConfig = await fs.readJSON(configPath)
       }
     }
-    if (preload) await preload(sequelize)
+    if (preload) await preload(orm)
 
     const commandSize = Object.values(commands).length
     const eventSize = Object.values(events).length

@@ -4,11 +4,11 @@
     "@tsconfig/node-ts/tsconfig.json"
   ],
   "compilerOptions": {
-    "baseUrl": "./",
     "declaration": true,
     "declarationDir": "./dist/types/",
     "outDir": "./dist/lotus/",
     "rootDir": "./src/",
     "resolveJsonModule": true
-  }
+  },
+  "include": ["./src/**.ts"]
 }

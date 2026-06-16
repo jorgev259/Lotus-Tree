@@ -1,24 +1,24 @@
-import { Sequelize } from 'sequelize'
-import { Client, Events, GatewayIntentBits, Partials } from 'discord.js'
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  Partials,
+  type ClientEvents
+} from 'discord.js'
+import { MikroORM } from '@mikro-orm/sqlite'
 
 import { loadModule } from './loadPackage.ts'
-import type {
-  LocalConfig,
-  Package,
-  Config,
-  LotusConfig,
-  EventFunction,
-  Globals
+import {
+  type LocalConfig,
+  type Package,
+  type Config,
+  type EventFunction,
+  LotusConfigCheck,
+  type ClientGlobals,
+  type ReadyCommand
 } from './index.ts'
 
-import lotusConfig from './config/lotus.json' with { type: 'json' }
-
-const {
-  sequelize: sequelizeConfig,
-  discord: discordConfig,
-  packages: packageList
-} = lotusConfig as LotusConfig
-const sequelize = new Sequelize(sequelizeConfig)
+import lotusConfigJson from './config/lotus.json' with { type: 'json' }
 
 const events = new Map<string, EventFunction[]>()
 const commands = new Map()
@@ -31,96 +31,113 @@ const defaultConfig: Config = { guild: {}, global: {} }
 const config: Config = { guild: {}, global: {} }
 const localConfig = {} as LocalConfig
 
-const packages = (
-  await Promise.all(packageList.map((p) => loadModule(p, sequelize)))
-).filter((p: Package | null) => p !== null) as Package[]
+async function start() {
+  const lotusConfig = LotusConfigCheck.check(lotusConfigJson)
 
-packages.forEach((pkg) => {
-  const {
-    name,
-    intents: packageIntents,
-    partials: packagePartials,
-    events: packageEvents,
-    commands: packageCommands,
-    config,
-    localConfig: pkgLocalConfig
-  } = pkg
+  const orm = await MikroORM.init({
+    ...lotusConfig.ormConfig,
+    entities: ['./dist/entities']
+  })
 
-  const commandNames = []
-  localConfig[name] = {}
+  const packages = (
+    await Promise.all(lotusConfig.packages.map((p) => loadModule(p, orm.em)))
+  ).filter((p: Package | null) => p !== null) as Package[]
 
-  packageIntents?.forEach((intent) => intents.add(intent))
-  packagePartials?.forEach((partial) => partials.add(partial))
+  packages.forEach((pkg) => {
+    const {
+      name,
+      about: pkgAbout,
+      intents: packageIntents,
+      partials: packagePartials,
+      events: packageEvents,
+      commands: packageCommands,
+      config,
+      localConfig: pkgLocalConfig
+    } = pkg
 
-  if (packageEvents) {
-    for (const [name, fn] of Object.entries(packageEvents)) {
-      if (!events.has(name)) events.set(name, [fn])
-      else events.set(name, [...(events.get(name) || []), fn])
-    }
-  }
+    const commandNames = []
+    localConfig[name] = {}
 
-  if (packageCommands) {
-    for (const [name, command] of Object.entries(packageCommands)) {
-      command.name = name
-      command.moduleName = pkg.name
-      command.enabled = {}
-      commands.set(name, command)
-      commandNames.push(name)
-    }
-  }
+    packageIntents?.forEach((intent) => intents.add(intent))
+    packagePartials?.forEach((partial) => partials.add(partial))
 
-  if (config?.global) {
-    for (const [name, value] of Object.entries(config.global || {})) {
-      defaultConfig.global[name] = value
-    }
-  }
-
-  if (config?.guild) {
-    for (const [name, value] of Object.entries(config.guild || {})) {
-      defaultConfig.guild[name] = value
-    }
-  }
-
-  if (pkgLocalConfig) {
-    for (const [configName, value] of Object.entries(pkgLocalConfig)) {
-      localConfig[name][configName] = value
-    }
-  }
-
-  const module = { name, commandNames, enabled: {} }
-  modules.set(name, module)
-})
-
-const client = new Client({
-  intents: Array.from(intents),
-  partials: Array.from(partials)
-})
-
-const globals = {
-  sequelize,
-  client,
-  commands,
-  defaultConfig,
-  config,
-  localConfig,
-  modules,
-  lotusConfig
-} as Globals
-
-for (const [eventName, eventList] of events.entries()) {
-  client.on(eventName, (...args) =>
-    eventList.forEach((item) => {
-      try {
-        item(globals, ...args)
-      } catch (err) {
-        console.log(err)
+    if (packageEvents) {
+      for (const [name, fn] of Object.entries(packageEvents)) {
+        if (!events.has(name)) events.set(name, [fn as EventFunction])
+        else
+          events.set(name, [...(events.get(name) || []), fn as EventFunction])
       }
-    })
-  )
+    }
+
+    if (packageCommands) {
+      for (const [name, command] of Object.entries(packageCommands)) {
+        const readyCommand: ReadyCommand = {
+          ...command,
+          name,
+          moduleName: pkg.name,
+          enabled: {}
+        }
+
+        commands.set(readyCommand.name, readyCommand)
+        commandNames.push(readyCommand.name)
+      }
+    }
+
+    if (config?.global) {
+      for (const [name, value] of Object.entries(config.global || {})) {
+        defaultConfig.global![name] = value
+      }
+    }
+
+    if (config?.guild) {
+      for (const [name, value] of Object.entries(config.guild || {})) {
+        defaultConfig.guild![name] = value
+      }
+    }
+
+    if (pkgLocalConfig) {
+      for (const [configName, value] of Object.entries(pkgLocalConfig)) {
+        localConfig[name][configName] = value
+      }
+    }
+
+    const module = { name, commandNames, enabled: {}, about: pkgAbout }
+    modules.set(name, module)
+  })
+
+  const client = new Client({
+    intents: Array.from(intents),
+    partials: Array.from(partials)
+  })
+
+  const globals: ClientGlobals = {
+    orm: orm.em,
+    client,
+    commands,
+    defaultConfig,
+    config,
+    localConfig,
+    modules,
+    lotusConfig
+  }
+
+  for (const [eventName, eventList] of events.entries()) {
+    client.on(eventName as keyof ClientEvents, (...args) =>
+      eventList.forEach((item) => {
+        try {
+          item(globals, ...args)
+        } catch (err) {
+          console.log(err)
+        }
+      })
+    )
+  }
+
+  client.once(Events.ClientReady, () => {
+    console.log(`Discord bot started! Logged in as ${client.user?.tag}`)
+  })
+
+  client.login(lotusConfig.discord.token)
 }
 
-client.once(Events.ClientReady, () => {
-  console.log(`Discord bot started! Logged in as ${client.user?.tag}`)
-})
-
-client.login(discordConfig.token)
+start()

@@ -6,6 +6,6 @@
   "discord": {
     "token": ""
   },
-  "owners": [],
+  "ownerIds": [],
   "packages": []
 }
