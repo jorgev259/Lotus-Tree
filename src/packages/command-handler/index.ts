@@ -2,7 +2,7 @@ import { GatewayIntentBits } from 'discord.js'
 
 import commands from './commands.ts'
 import events from './events.ts'
-import models from './models.ts'
+import entities from './entities.ts'
 import type { Package } from '../../index.ts'
 
 const module: Package = {
@@ -15,7 +15,7 @@ const module: Package = {
   ],
   commands,
   events,
-  models
+  entities
 }
 
 export default module

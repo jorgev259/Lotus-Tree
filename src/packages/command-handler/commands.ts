@@ -5,7 +5,7 @@ import {
   ConfigSchema,
   ModuleSchema,
   PermSchema
-} from './models.ts'
+} from './entities.ts'
 import { permCheck } from './util.ts'
 
 const commands: CommandGroup = {

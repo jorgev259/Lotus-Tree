@@ -1,8 +1,5 @@
-import type {
-  EntityManager,
-  EntitySchema,
-  Options as MikroORMOptions
-} from '@mikro-orm/core'
+import type { EntityManager, EntitySchema } from '@mikro-orm/core'
+import type { Options as MikroORMOptions } from '@mikro-orm/mariadb'
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js'
 import type {
   APIEmbedField,
@@ -20,8 +17,8 @@ import {
   type Static
 } from 'runtypes'
 
-export type Config = Record<string, Record<string, any>>
-export type LocalConfig = Record<string, Record<string, any>>
+export type Config = Record<string, Record<string, string>>
+export type LocalConfig = Record<string, Record<string, string>>
 
 export type EventFunction<E extends keyof ClientEvents = keyof ClientEvents> = (
   globals: ClientGlobals,
@@ -44,7 +41,7 @@ export interface Package {
   config?: Config
   localConfig?: LocalConfig
   preload?: (orm: EntityManager) => Promise<void>
-  models?: EntitySchema[]
+  entities?: EntitySchema[]
 }
 
 export interface PackageModule {
@@ -95,7 +92,7 @@ export interface Command {
 export interface ReadyCommand extends Command {
   name: string
   moduleName: string
-  enabled: Record<any, any>
+  enabled: Record<string, boolean>
 }
 
 export type CommandGroup = Record<string, Command>

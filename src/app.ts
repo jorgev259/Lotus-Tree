@@ -5,20 +5,20 @@ import {
   Partials,
   type ClientEvents
 } from 'discord.js'
-import { MikroORM } from '@mikro-orm/sqlite'
+import { MikroORM } from '@mikro-orm/mariadb'
 
-import { loadModule } from './loadPackage.ts'
 import {
   type LocalConfig,
-  type Package,
   type Config,
   type EventFunction,
-  LotusConfigCheck,
   type ClientGlobals,
   type ReadyCommand
 } from './index.ts'
+import checkConfig from './util/checkConfig.ts'
+import getORMConfig from './mikro-orm.config.ts'
+import { loadPackage } from './util/package.ts'
 
-import lotusConfigJson from './config/lotus.json' with { type: 'json' }
+const lotusConfig = checkConfig()
 
 const events = new Map<string, EventFunction[]>()
 const commands = new Map()
@@ -32,16 +32,9 @@ const config: Config = { guild: {}, global: {} }
 const localConfig = {} as LocalConfig
 
 async function start() {
-  const lotusConfig = LotusConfigCheck.check(lotusConfigJson)
-
-  const orm = await MikroORM.init({
-    ...lotusConfig.ormConfig,
-    entities: ['./dist/entities']
-  })
-
-  const packages = (
-    await Promise.all(lotusConfig.packages.map((p) => loadModule(p, orm.em)))
-  ).filter((p: Package | null) => p !== null) as Package[]
+  const packages = await Promise.all(
+    lotusConfig.packages.map((packagePath) => loadPackage(packagePath))
+  )
 
   packages.forEach((pkg) => {
     const {
@@ -97,6 +90,7 @@ async function start() {
 
     if (pkgLocalConfig) {
       for (const [configName, value] of Object.entries(pkgLocalConfig)) {
+        // @ts-expect-error Untested feature
         localConfig[name][configName] = value
       }
     }
@@ -109,6 +103,10 @@ async function start() {
     intents: Array.from(intents),
     partials: Array.from(partials)
   })
+
+  const orm = await MikroORM.init(await getORMConfig())
+  await orm.migrator.create()
+  await orm.migrator.up()
 
   const globals: ClientGlobals = {
     orm: orm.em,

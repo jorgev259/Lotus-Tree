@@ -1,35 +1,7 @@
-/*
-    sequelize.define('config', {
-      guild: { type: STRING, unique: 'index' },
-      item: { type: STRING, unique: 'index' },
-      value: { type: STRING }
-    })
-
-    sequelize.define('module', {
-      guild: { type: STRING, unique: 'index' },
-      module: { type: STRING, unique: 'index' },
-      value: { type: BOOLEAN, defaultValue: true }
-    })
-
-    sequelize.define('command', {
-      guild: { type: STRING, unique: 'index' },
-      command: { type: STRING, unique: 'index' },
-      value: { type: BOOLEAN, defaultValue: true }
-    })
-
-    sequelize.define('perm', {
-      guild: STRING,
-      command: STRING,
-      category: STRING,
-      type: STRING,
-      name: STRING
-    })
-*/
-
 import { defineEntity, EntitySchema, p } from '@mikro-orm/core'
 
 export const ConfigSchema = defineEntity({
-  name: 'config',
+  name: 'configs',
   properties: {
     guild: p.string().primary(),
     item: p.string().primary(),
@@ -38,7 +10,7 @@ export const ConfigSchema = defineEntity({
 })
 
 export const ModuleSchema = defineEntity({
-  name: 'module',
+  name: 'modules',
   properties: {
     guild: p.string().primary(),
     module: p.string().primary(),
@@ -47,7 +19,7 @@ export const ModuleSchema = defineEntity({
 })
 
 export const CommandSchema = defineEntity({
-  name: 'command',
+  name: 'commands',
   properties: {
     guild: p.string().primary(),
     command: p.string().primary(),
@@ -56,8 +28,9 @@ export const CommandSchema = defineEntity({
 })
 
 export const PermSchema = defineEntity({
-  name: 'perm',
+  name: 'perms',
   properties: {
+    id: p.integer().primary().autoincrement(),
     guild: p.string(),
     command: p.string(),
     category: p.string(),
@@ -67,11 +40,11 @@ export const PermSchema = defineEntity({
   }
 })
 
-const models: EntitySchema[] = [
+const entities: EntitySchema[] = [
   ConfigSchema,
   ModuleSchema,
   CommandSchema,
   PermSchema
 ]
 
-export default models
+export default entities

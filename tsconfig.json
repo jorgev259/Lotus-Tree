@@ -1,14 +1,12 @@
 {
-  "extends": [
-    "@tsconfig/node-lts/tsconfig.json",
-    "@tsconfig/node-ts/tsconfig.json"
-  ],
+  "extends": "@tsconfig/node-lts/tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "./dist/types/",
-    "outDir": "./dist/lotus/",
+    "outDir": "./dist",
     "rootDir": "./src/",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true
   },
-  "include": ["./src/**.ts"]
+  "include": ["src/**/*.ts"]
 }

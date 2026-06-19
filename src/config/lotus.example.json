@@ -1,7 +1,10 @@
 {
-  "sequelize": {
-    "dialect": "sqlite",
-    "storage": "./db.sqlite"
+  "ormConfig": {
+    "dbName": "",
+    "host": "",
+    "port": 1234,
+    "user": "",
+    "password": ""
   },
   "discord": {
     "token": ""

@@ -1,18 +1,12 @@
 import { PermissionsBitField, type Snowflake } from 'discord.js'
 
-import type {
-  ClientGlobals,
-  Command,
-  CommandGlobals,
-  GuildMessage,
-  ReadyCommand
-} from '../../index.ts'
+import type { ClientGlobals, GuildMessage, ReadyCommand } from '../../index.ts'
 import {
   CommandSchema,
   ConfigSchema,
   ModuleSchema,
   PermSchema
-} from './models.ts'
+} from './entities.ts'
 
 const orderCategory = ['user', 'role', 'channel']
 const orderType = ['deny', 'allow']
