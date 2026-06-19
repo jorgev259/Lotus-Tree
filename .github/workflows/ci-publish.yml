@@ -6,23 +6,63 @@ on:
 
 permissions:
   id-token: write
-  contents: read
-
+  contents: write
 jobs:
-  build-types:
+  build-app:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: fregante/setup-git-user@v2
       - uses: actions/setup-node@v6
         with:
           node-version: latest
           cache: yarn
-          registry-url: 'https://registry.npmjs.org'
-      - name: Prepare build-types
+
+      - name: Build app
         run: |
-          yarn -y 
-          cp src/config/lotus.example.json src/config/lotus.json
-          yarn build
-          cp package-types.json dist/types/package.json
-          cd dist/types/
+          yarn --frozen-lockfile
+          yarn build:app
+
+      - name: Commit new version
+        run: |
+          yarn version --patch
+          git push
+
+      - name: Publish types
+        run: npm publish
+
+  build-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: fregante/setup-git-user@v2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          cache: yarn
+
+      - name: Build types
+        run: |
+          yarn --frozen-lockfile
+          yarn build:types
+
+      - name: Prepare types
+        run: |
+          mv package.json package-app.json
+          cp package-types.json dist/package.json
+          cd dist
+          YARN_VERSION_GIT_TAG='' yarn version --patch
+          cd ..
+          rm package-types.json
+          cp dist/package.json package-types.json
+
+      - name: Commit new version
+        run: |
+          git add package-types.json
+          git commit -m "Bumped types version"
+          git push
+
+      - name: Publish types
+        run: |
+          cd dist
           npm publish

@@ -1,5 +1,5 @@
 {
-  "name": "lotus-tree-types",
+  "name": "@lotus-tree/types",
   "version": "3.0.0",
   "homepage": "https://github.com/jorgev259/Lotus-Tree#readme",
   "bugs": {
@@ -12,7 +12,7 @@
   "type": "module",
   "main": "index.d.ts",
   "dependencies": {
-    "@mikro-orm/core": "^7.1.4",
+    "@mikro-orm/mariadb": "^7.1.4",
     "discord.js": "^14.14.1",
     "runtypes": "^7.0.4"
   },

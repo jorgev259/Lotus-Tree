@@ -1,5 +1,8 @@
-import type { EntityManager, EntitySchema } from '@mikro-orm/core'
-import type { Options as MikroORMOptions } from '@mikro-orm/mariadb'
+import type {
+  Options as MikroORMOptions,
+  EntityManager,
+  EntitySchema
+} from '@mikro-orm/mariadb'
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js'
 import type {
   APIEmbedField,

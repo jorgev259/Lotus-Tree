@@ -1,6 +1,6 @@
 {
-  "name": "lotus-tree",
-  "version": "3.0.0",
+  "name": "@lotus-tree/core",
+  "version": "3.0.2",
   "homepage": "https://github.com/jorgev259/Lotus-Tree#readme",
   "bugs": {
     "url": "https://github.com/jorgev259/Lotus-Tree/issues"
@@ -10,6 +10,7 @@
     "url": "git+https://github.com/jorgev259/Lotus-Tree.git"
   },
   "type": "module",
+  "main": "dist/app.js",
   "scripts": {
     "build:app": "tsc --declaration false",
     "build:types": "tsc --emitDeclarationOnly true --declaration true",

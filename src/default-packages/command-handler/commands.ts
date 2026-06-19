@@ -136,7 +136,7 @@ const commands: CommandGroup = {
         return message.channel.send(`\`${name}\` is not a valid command`)
 
       let category
-      let nameId = ''
+      let nameId
 
       if (message.mentions.users.size > 0) {
         category = 'user'

@@ -56,6 +56,7 @@ const events: LotusEvents = {
       (await permCheck(command, message, globals))
     ) {
       command.execute(
+        //@ts-expect-error untested feature
         { ...globals, param, localConfig: localConfig[moduleName]! },
         ...args
       )
