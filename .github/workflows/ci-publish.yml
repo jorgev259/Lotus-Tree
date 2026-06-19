@@ -1,4 +1,4 @@
-name: Publish pipeline
+name: Publish @lotus-tree/types
 
 on:
   push:
@@ -8,29 +8,6 @@ permissions:
   id-token: write
   contents: write
 jobs:
-  build-app:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: fregante/setup-git-user@v2
-      - uses: actions/setup-node@v6
-        with:
-          node-version: latest
-          cache: yarn
-
-      - name: Build app
-        run: |
-          yarn --frozen-lockfile
-          yarn build:app
-
-      - name: Commit new version
-        run: |
-          yarn version --patch
-          git push
-
-      - name: Publish types
-        run: npm publish
-
   build-types:
     runs-on: ubuntu-latest
     steps:
