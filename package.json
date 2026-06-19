@@ -14,7 +14,8 @@
   "scripts": {
     "build:app": "tsc --declaration false",
     "build:types": "tsc --emitDeclarationOnly true --declaration true",
-    "dev": "tsx --watch src/app.ts"
+    "dev": "tsx --watch src/app.ts",
+    "start": "node dist/app.js"
   },
   "dependencies": {
     "@mikro-orm/cli": "^7.1.4",

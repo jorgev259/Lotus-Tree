@@ -1,7 +1,15 @@
 import fs from 'fs-extra'
 import path from 'path'
+import { fileURLToPath, pathToFileURL } from 'url'
 
 import type { Package } from '../index.ts'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(__dirname, '..').replace(/\\/g, '/')
+
+function resolvePackagePath(packagePath: string) {
+  return pathToFileURL(`${rootDir}/${packagePath}`).href
+}
 
 export async function loadPackage(packagePath: string) {
   const packageObj = await importPackage(packagePath)
@@ -39,7 +47,7 @@ export async function loadPackage(packagePath: string) {
 
 export async function importPackage(packagePath: string) {
   const { default: botPackage }: { default: Package } = await import(
-    packagePath
+    resolvePackagePath(packagePath)
   )
   return botPackage
 }

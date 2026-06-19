@@ -8,6 +8,40 @@ permissions:
   id-token: write
   contents: write
 jobs:
+  build-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: fregante/setup-git-user@v2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          cache: yarn
+
+      - name: Build app
+        run: |
+          yarn --frozen-lockfile
+          yarn build:app
+
+      - name: Extract Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ vars.DOCKER_USERNAME }}/lotus-tree
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
   build-types:
     runs-on: ubuntu-latest
     steps:

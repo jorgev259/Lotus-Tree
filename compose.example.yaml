@@ -1,0 +1,6 @@
+services:
+  lotus-tree:
+    image: lotus-tree
+    volumes:
+      - ./config:/app/dist/config:rw
+      - ./package.json:/app/package.json
